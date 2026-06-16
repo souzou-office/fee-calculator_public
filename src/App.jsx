@@ -45,6 +45,8 @@ const DEF_FT=[
 const DEF_SURCHARGES=[
   {id:"kubun",name:"区分建物",amount:5000},
 ];
+// 旧・事務所固有のデフォルト加算ID（汎用化で削除。保存済み設定からも自動除去する）
+const REMOVED_SC_IDS=["kachitas","sbi"];
 const DEF_UNIT={propAdd:2000,deletionBase:12000,deletionPropAdd:2000,addressBase:12000,addressPropAdd:2000};
 const DEF_STD_ITEMS=[
   {id:"cert",name:"登記事項証明書",fee:1000,jippi:600,unitLabel:"通"},
@@ -253,7 +255,7 @@ function Settings({ft,setFt,unit,setUnit,surcharges,setSurcharges,stdItems,setSt
     const r=new FileReader();r.onload=(ev)=>{
       try{const d=JSON.parse(ev.target.result);
         if(d.ft)setFt(d.ft);if(d.unit)setUnit(u=>({...u,...d.unit}));
-        if(d.surcharges)setSurcharges(d.surcharges);
+        if(Array.isArray(d.surcharges))setSurcharges(d.surcharges.filter(s=>s&&!REMOVED_SC_IDS.includes(s.id)));
         if(Array.isArray(d.stdItems))setStdItems(d.stdItems.filter(si=>si&&si.id&&si.name));
         alert("設定を読み込みました");
       }catch{alert("ファイルの読み込みに失敗しました");}
@@ -521,35 +523,38 @@ function Meisai({items,g,scTotal,rows,stdItems,rate}){
     <div className="rounded-xl p-5 mb-4" style={{background:"#fff",border:"1px solid #e5e9f0"}}>
       <h3 className="text-sm font-bold mb-3" style={{color:"#4338ca"}}>ご請求明細</h3>
 
-      <p className="text-xs font-bold mb-1" style={{color:"#566275"}}>登記報酬・登録免許税</p>
-      {regLines.map(({it,c,fee,addSc},i)=>(
-        <div key={i} className="py-1.5" style={{borderBottom:"1px solid #f0f3f8"}}>
-          <div className="flex justify-between items-baseline gap-2">
-            <span className="text-sm flex-1 min-w-0" style={{color:"#1a2233"}}>{itemLabel(it)}</span>
-            <span className="text-sm font-medium flex-shrink-0" style={{fontVariantNumeric:"tabular-nums"}}>{fmt(fee)}</span>
-          </div>
-          <div className="text-xs mt-0.5" style={{color:"#8393a7"}}>
-            {c.isSimpleType?`基本（${c.col}）`:`基本（${c.col}/${fmtM(c.lv)}）`} {fmt(c.fb)}
-            {c.ep>0&&`　不動産加算 ${fmt(c.ep)}`}
-            {addSc>0&&`　加算 ${fmt(addSc)}`}
-            <span style={{color:"#92400e"}}>　登免税 {fmt(c.tax)}</span>
-          </div>
-        </div>
-      ))}
-
-      {feeRows.length>0&&<>
-        <p className="text-xs font-bold mb-1 mt-3" style={{color:"#566275"}}>証明書・実費・その他</p>
-        {feeRows.map((r,i)=>(
-          <div key={i} className="flex justify-between items-baseline gap-2 py-1.5" style={{borderBottom:"1px solid #f0f3f8"}}>
-            <span className="text-sm flex-1 min-w-0" style={{color:"#1a2233"}}>{r.name}</span>
-            <span className="text-xs flex-shrink-0" style={{fontVariantNumeric:"tabular-nums"}}>
-              {r.fee>0&&<span style={{color:"#4338ca"}}>報酬 {fmt(r.fee)}</span>}
-              {r.fee>0&&r.jippi>0&&"　"}
-              {r.jippi>0&&<span style={{color:"#92400e"}}>実費 {fmt(r.jippi)}</span>}
-            </span>
-          </div>
-        ))}
-      </>}
+      <table className="w-full" style={{borderCollapse:"collapse"}}>
+        <thead>
+          <tr style={{borderBottom:"1.5px solid #e5e9f0"}}>
+            <th className="text-left text-xs font-bold pb-1.5" style={{color:"#566275"}}>項目</th>
+            <th className="text-right text-xs font-bold pb-1.5 pl-3 whitespace-nowrap" style={{color:"#4338ca"}}>報酬</th>
+            <th className="text-right text-xs font-bold pb-1.5 pl-3 whitespace-nowrap" style={{color:"#92400e"}}>登免税・実費</th>
+          </tr>
+        </thead>
+        <tbody>
+          {regLines.map(({it,c,fee,addSc},i)=>(
+            <tr key={`reg-${i}`} style={{borderBottom:"1px solid #f0f3f8"}}>
+              <td className="py-1.5 align-top" style={{minWidth:0}}>
+                <div className="text-sm" style={{color:"#1a2233"}}>{itemLabel(it)}</div>
+                <div className="text-xs mt-0.5" style={{color:"#8393a7"}}>
+                  {c.isSimpleType?`基本（${c.col}）`:`基本（${c.col}/${fmtM(c.lv)}）`} {fmt(c.fb)}
+                  {c.ep>0&&`　＋不動産加算 ${fmt(c.ep)}`}
+                  {addSc>0&&`　＋加算 ${fmt(addSc)}`}
+                </div>
+              </td>
+              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#1a2233"}}>{fmt(fee)}</td>
+              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#92400e"}}>{c.tax>0?fmt(c.tax):"—"}</td>
+            </tr>
+          ))}
+          {feeRows.map((r,i)=>(
+            <tr key={`fee-${i}`} style={{borderBottom:"1px solid #f0f3f8"}}>
+              <td className="py-1.5 text-sm align-top" style={{color:"#1a2233"}}>{r.name}</td>
+              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#1a2233"}}>{r.fee>0?fmt(r.fee):"—"}</td>
+              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#92400e"}}>{r.jippi>0?fmt(r.jippi):"—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <div className="mt-3 pt-2" style={{borderTop:"1px dashed #dce1ea"}}>
         <Rw label="報酬（税抜）" value={fmt(feeExcl)} />
@@ -590,7 +595,7 @@ export default function App(){
   const[enabledSc,setEnabledSc]=useState({});
   const[commonOpen,setCommonOpen]=useState(true);
 
-  useEffect(()=>{try{const r=localStorage.getItem("fee-config-v4");if(r){const d=JSON.parse(r);if(d.ft)setFt(d.ft);if(d.unit)setUnit(u=>({...u,...d.unit}));if(d.surcharges)setSurcharges(d.surcharges);if(Array.isArray(d.stdItems))setStdItems(d.stdItems.filter(si=>si&&si.id&&si.name));}}catch{};},[]);
+  useEffect(()=>{try{const r=localStorage.getItem("fee-config-v4");if(r){const d=JSON.parse(r);if(d.ft)setFt(d.ft);if(d.unit)setUnit(u=>({...u,...d.unit}));if(Array.isArray(d.surcharges))setSurcharges(d.surcharges.filter(s=>s&&!REMOVED_SC_IDS.includes(s.id)));if(Array.isArray(d.stdItems))setStdItems(d.stdItems.filter(si=>si&&si.id&&si.name));}}catch{};},[]);
   useEffect(()=>{try{localStorage.setItem("fee-config-v4",JSON.stringify({ft,unit,surcharges,stdItems}));}catch{};},[ft,unit,surcharges,stdItems]);
 
   const hasTr=items.some(i=>i.type==="transfer");
