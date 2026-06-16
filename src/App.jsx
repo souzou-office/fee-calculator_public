@@ -520,7 +520,7 @@ function Meisai({items,g,scTotal,rows,stdItems,rate}){
   const feeIncl=feeExcl+consumptionTax;
   const grand=feeIncl+regTax+jippiTotal;
   return(
-    <div className="rounded-xl p-5 mb-4" style={{background:"#fff",border:"1px solid #e5e9f0"}}>
+    <div className="rounded-xl p-5 mb-4" style={{background:"#fff",border:"1.5px solid #c7d2fe",boxShadow:"0 2px 8px rgba(99,102,241,0.08)"}}>
       <h3 className="text-sm font-bold mb-3" style={{color:"#4338ca"}}>ご請求明細</h3>
 
       <table className="w-full" style={{borderCollapse:"collapse"}}>
@@ -562,9 +562,9 @@ function Meisai({items,g,scTotal,rows,stdItems,rate}){
         <Rw label="報酬（税込）" value={fmt(feeIncl)} bold />
         <Rw label="登録免許税" value={fmt(regTax)} />
         {jippiTotal>0&&<Rw label="実費・立替金（非課税）" value={fmt(jippiTotal)} />}
-        <div className="flex justify-between items-baseline mt-3 p-3 rounded-xl" style={{background:"#eef2ff",border:"1.5px solid #c7d2fe"}}>
-          <span className="text-sm font-bold" style={{color:"#1a2233"}}>合計請求額</span>
-          <span className="text-2xl font-bold" style={{color:"#4338ca",fontVariantNumeric:"tabular-nums"}}>{fmt(grand)}</span>
+        <div className="flex justify-between items-baseline mt-3 p-4 rounded-xl" style={{background:"linear-gradient(135deg,#4338ca,#3730a3)",boxShadow:"0 4px 12px rgba(67,56,202,0.25)"}}>
+          <span className="text-sm font-bold" style={{color:"rgba(255,255,255,0.85)"}}>合計請求額</span>
+          <span className="text-2xl font-bold" style={{color:"#fff",fontVariantNumeric:"tabular-nums"}}>{fmt(grand)}</span>
         </div>
       </div>
     </div>);
