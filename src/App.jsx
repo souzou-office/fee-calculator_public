@@ -506,7 +506,7 @@ function buildFeeRows(rows,stdItems){
   });
   return out;
 }
-function Meisai({items,g,scTotal,rows,stdItems}){
+function Meisai({items,g,scTotal,rows,stdItems,rate}){
   const feeRows=buildFeeRows(rows,stdItems);
   const regLines=items.map((it,i)=>{const c=calcItem(it,g);const fee=i===0?c.fee+scTotal:c.fee;return{it,c,fee,addSc:i===0?scTotal:0};});
   const regTax=regLines.reduce((s,l)=>s+l.c.tax,0);
@@ -514,6 +514,9 @@ function Meisai({items,g,scTotal,rows,stdItems}){
   const otherFee=feeRows.reduce((s,r)=>s+r.fee,0);
   const jippiTotal=feeRows.reduce((s,r)=>s+r.jippi,0);
   const feeExcl=regFee+otherFee;
+  const consumptionTax=Math.floor(feeExcl*rate/100);
+  const feeIncl=feeExcl+consumptionTax;
+  const grand=feeIncl+regTax+jippiTotal;
   return(
     <div className="rounded-xl p-5 mb-4" style={{background:"#fff",border:"1px solid #e5e9f0"}}>
       <h3 className="text-sm font-bold mb-3" style={{color:"#4338ca"}}>ご請求明細</h3>
@@ -549,11 +552,15 @@ function Meisai({items,g,scTotal,rows,stdItems}){
       </>}
 
       <div className="mt-3 pt-2" style={{borderTop:"1px dashed #dce1ea"}}>
-        <Rw label="報酬（税抜）小計" value={fmt(feeExcl)} bold />
-        <Rw label="　うち登記報酬" value={fmt(regFee)} sub />
-        {otherFee>0&&<Rw label="　うち証明書・その他報酬" value={fmt(otherFee)} sub />}
-        <Rw label="登録免許税 小計" value={fmt(regTax)} />
-        {jippiTotal>0&&<Rw label="実費・立替金 小計（非課税）" value={fmt(jippiTotal)} />}
+        <Rw label="報酬（税抜）" value={fmt(feeExcl)} />
+        <Rw label={`消費税（${rate}%）`} value={fmt(consumptionTax)} sub />
+        <Rw label="報酬（税込）" value={fmt(feeIncl)} bold />
+        <Rw label="登録免許税" value={fmt(regTax)} />
+        {jippiTotal>0&&<Rw label="実費・立替金（非課税）" value={fmt(jippiTotal)} />}
+        <div className="flex justify-between items-baseline mt-3 p-3 rounded-xl" style={{background:"#eef2ff",border:"1.5px solid #c7d2fe"}}>
+          <span className="text-sm font-bold" style={{color:"#1a2233"}}>合計請求額</span>
+          <span className="text-2xl font-bold" style={{color:"#4338ca",fontVariantNumeric:"tabular-nums"}}>{fmt(grand)}</span>
+        </div>
       </div>
     </div>);
 }
@@ -594,11 +601,6 @@ export default function App(){
   const expList=useMemo(()=>getExpList(counts,stdItems,postage,extras),[counts,stdItems,postage,extras]);
   const xfee=useMemo(()=>getXFee(counts,stdItems,extras),[counts,stdItems,extras]);
   const scTotal=useMemo(()=>surcharges.reduce((s,sc)=>s+(enabledSc[sc.id]?sc.amount:0),0),[surcharges,enabledSc]);
-  const tot=useMemo(()=>{
-    let tf=0,tt=0;items.forEach(it=>{const c=calcItem(it,g);tf+=c.fee;tt+=c.tax;});
-    tf+=scTotal+xfee;const et=expList.reduce((s,e)=>s+e.amount,0);const ct=Math.floor(tf*rate/100);
-    return{tf,tt,ct,et,g:tf+ct+tt+et};
-  },[items,rate,expList,xfee,scTotal,g]);
 
   const autoLabel=hasTr&&hasMtg?"移転＋設定 → 移転(設定有) / 抵当権設定テーブル"
     :hasTr?"移転のみ → 移転(設定無)テーブル"
@@ -730,16 +732,8 @@ export default function App(){
 
           <div className="rounded-xl p-5 mb-4" style={{background:"#fff",border:"1px solid #e5e9f0"}}><Inp label="消費税率" value={rate} onChange={setRate} suffix="%" min={0} step={1} /></div>
 
-          <Meisai items={items} g={g} scTotal={scTotal} rows={rows} stdItems={stdItems} />
+          <Meisai items={items} g={g} scTotal={scTotal} rows={rows} stdItems={stdItems} rate={rate} />
 
-          <div className="rounded-xl p-5 mb-4" style={{background:"linear-gradient(135deg,#4338ca,#3730a3)",color:"#fff"}}>
-            <h3 className="text-sm font-bold mb-3" style={{color:"rgba(255,255,255,0.7)"}}>合計</h3>
-            {[["報酬（税抜）",fmt(tot.tf)],[`消費税（${rate}%）`,fmt(tot.ct)],["報酬（税込）",fmt(tot.tf+tot.ct)],["登録免許税",fmt(tot.tt)],...(tot.et>0?[["実費・立替金",fmt(tot.et)]]:[])]
-              .map(([l,v],i)=><div key={i} className="flex justify-between mb-1"><span className="text-sm" style={{color:"rgba(255,255,255,0.75)"}}>{l}</span><span className="text-sm font-medium" style={{fontVariantNumeric:"tabular-nums"}}>{v}</span></div>)}
-            <div className="pt-3 mt-2" style={{borderTop:"1px solid rgba(255,255,255,0.2)"}}>
-              <div className="flex justify-between items-baseline"><span className="font-bold">合計請求額</span><span className="text-2xl font-bold" style={{fontVariantNumeric:"tabular-nums"}}>{fmt(tot.g)}</span></div>
-            </div>
-          </div>
         </div>
 
         <p className="text-xs text-center px-4" style={{color:"#a0aec0",gridColumn:"1 / -1"}}>※ 参考値。土地売買15/1000は令和8年3月31日まで。住宅用家屋証明は令和9年3月31日まで。</p>
