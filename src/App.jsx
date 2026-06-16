@@ -520,50 +520,51 @@ function Meisai({items,g,scTotal,rows,stdItems,rate}){
   const feeIncl=feeExcl+consumptionTax;
   const grand=feeIncl+regTax+jippiTotal;
   return(
-    <div className="rounded-xl p-5 mb-4" style={{background:"#fff",border:"1.5px solid #c7d2fe",boxShadow:"0 2px 8px rgba(99,102,241,0.08)"}}>
-      <h3 className="text-sm font-bold mb-3" style={{color:"#4338ca"}}>ご請求明細</h3>
+    <div className="rounded-xl p-5 mb-4" style={{background:"linear-gradient(135deg,#4338ca,#3730a3)",color:"#fff",boxShadow:"0 4px 16px rgba(67,56,202,0.25)"}}>
+      <h3 className="text-sm font-bold mb-3" style={{color:"rgba(255,255,255,0.7)"}}>ご請求明細</h3>
 
       <table className="w-full" style={{borderCollapse:"collapse"}}>
         <thead>
-          <tr style={{borderBottom:"1.5px solid #e5e9f0"}}>
-            <th className="text-left text-xs font-bold pb-1.5" style={{color:"#566275"}}>項目</th>
-            <th className="text-right text-xs font-bold pb-1.5 pl-3 whitespace-nowrap" style={{color:"#4338ca"}}>報酬</th>
-            <th className="text-right text-xs font-bold pb-1.5 pl-3 whitespace-nowrap" style={{color:"#92400e"}}>登免税・実費</th>
+          <tr style={{borderBottom:"1.5px solid rgba(255,255,255,0.3)"}}>
+            <th className="text-left text-xs font-bold pb-1.5" style={{color:"rgba(255,255,255,0.7)"}}>項目</th>
+            <th className="text-right text-xs font-bold pb-1.5 pl-3 whitespace-nowrap" style={{color:"rgba(255,255,255,0.85)"}}>報酬</th>
+            <th className="text-right text-xs font-bold pb-1.5 pl-3 whitespace-nowrap" style={{color:"#fde68a"}}>登免税・実費</th>
           </tr>
         </thead>
         <tbody>
           {regLines.map(({it,c,fee,addSc},i)=>(
-            <tr key={`reg-${i}`} style={{borderBottom:"1px solid #f0f3f8"}}>
+            <tr key={`reg-${i}`} style={{borderBottom:"1px solid rgba(255,255,255,0.12)"}}>
               <td className="py-1.5 align-top" style={{minWidth:0}}>
-                <div className="text-sm" style={{color:"#1a2233"}}>{itemLabel(it)}</div>
-                <div className="text-xs mt-0.5" style={{color:"#8393a7"}}>
+                <div className="text-sm" style={{color:"#fff"}}>{itemLabel(it)}</div>
+                <div className="text-xs mt-0.5" style={{color:"rgba(255,255,255,0.6)"}}>
                   {c.isSimpleType?`基本（${c.col}）`:`基本（${c.col}/${fmtM(c.lv)}）`} {fmt(c.fb)}
                   {c.ep>0&&`　＋不動産加算 ${fmt(c.ep)}`}
                   {addSc>0&&`　＋加算 ${fmt(addSc)}`}
                 </div>
               </td>
-              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#1a2233"}}>{fmt(fee)}</td>
-              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#92400e"}}>{c.tax>0?fmt(c.tax):"—"}</td>
+              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#fff"}}>{fmt(fee)}</td>
+              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#fde68a"}}>{c.tax>0?fmt(c.tax):"—"}</td>
             </tr>
           ))}
           {feeRows.map((r,i)=>(
-            <tr key={`fee-${i}`} style={{borderBottom:"1px solid #f0f3f8"}}>
-              <td className="py-1.5 text-sm align-top" style={{color:"#1a2233"}}>{r.name}</td>
-              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#1a2233"}}>{r.fee>0?fmt(r.fee):"—"}</td>
-              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#92400e"}}>{r.jippi>0?fmt(r.jippi):"—"}</td>
+            <tr key={`fee-${i}`} style={{borderBottom:"1px solid rgba(255,255,255,0.12)"}}>
+              <td className="py-1.5 text-sm align-top" style={{color:"#fff"}}>{r.name}</td>
+              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#fff"}}>{r.fee>0?fmt(r.fee):"—"}</td>
+              <td className="text-right text-sm align-top py-1.5 pl-3 whitespace-nowrap" style={{fontVariantNumeric:"tabular-nums",color:"#fde68a"}}>{r.jippi>0?fmt(r.jippi):"—"}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div className="mt-3 pt-2" style={{borderTop:"1px dashed #dce1ea"}}>
-        <Rw label="報酬（税抜）" value={fmt(feeExcl)} />
-        <Rw label={`消費税（${rate}%）`} value={fmt(consumptionTax)} sub />
-        <Rw label="報酬（税込）" value={fmt(feeIncl)} bold />
-        <Rw label="登録免許税" value={fmt(regTax)} />
-        {jippiTotal>0&&<Rw label="実費・立替金（非課税）" value={fmt(jippiTotal)} />}
-        <div className="flex justify-between items-baseline mt-3 p-4 rounded-xl" style={{background:"linear-gradient(135deg,#4338ca,#3730a3)",boxShadow:"0 4px 12px rgba(67,56,202,0.25)"}}>
-          <span className="text-sm font-bold" style={{color:"rgba(255,255,255,0.85)"}}>合計請求額</span>
+      <div className="mt-3 pt-3" style={{borderTop:"1px solid rgba(255,255,255,0.2)"}}>
+        {[["報酬（税抜）",fmt(feeExcl),false],[`消費税（${rate}%）`,fmt(consumptionTax),false],["報酬（税込）",fmt(feeIncl),true],["登録免許税",fmt(regTax),false],...(jippiTotal>0?[["実費・立替金（非課税）",fmt(jippiTotal),false]]:[])].map(([l,v,b],i)=>(
+          <div key={i} className="flex justify-between items-baseline mb-1">
+            <span className="text-sm" style={{color:b?"#fff":"rgba(255,255,255,0.75)",fontWeight:b?700:400}}>{l}</span>
+            <span className="text-sm" style={{color:"#fff",fontWeight:b?700:500,fontVariantNumeric:"tabular-nums"}}>{v}</span>
+          </div>
+        ))}
+        <div className="flex justify-between items-baseline mt-2 pt-3" style={{borderTop:"1px solid rgba(255,255,255,0.2)"}}>
+          <span className="font-bold" style={{color:"#fff"}}>合計請求額</span>
           <span className="text-2xl font-bold" style={{color:"#fff",fontVariantNumeric:"tabular-nums"}}>{fmt(grand)}</span>
         </div>
       </div>
