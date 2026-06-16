@@ -1,19 +1,7 @@
 // src/DocumentChecklist.jsx
 // 必要書類一覧作成ツール — fee-calculator統合版
 import { useState, useRef, useMemo, useEffect } from "react";
-
-// ========== IMPORT / EXPORT HELPERS ==========
-function downloadJSON(data, filename) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
-}
-function uploadJSON() {
-  return new Promise(res => {
-    const input = document.createElement("input"); input.type = "file"; input.accept = ".json";
-    input.onchange = e => { const f = e.target.files?.[0]; if (!f) return res(null); const r = new FileReader(); r.onload = () => { try { res(JSON.parse(r.result)); } catch { res(null); } }; r.readAsText(f); };
-    input.click();
-  });
-}
+import { exportAllSettings, importAllSettings, SETTINGS_NOTE } from "./settings";
 
 // ========== DATA ==========
 const DEFAULT_OFFICE = { zip: "", address: "", name: "", rep: "", tel: "", fax: "", email: "" };
@@ -226,9 +214,6 @@ export default function DocumentChecklist() {
     return n.text;
   };
 
-  const exportSettings = () => downloadJSON({ office, extraItems, mailItems, version: 2 }, "必要書類一覧_設定.json");
-  const importSettings = async () => { const d = await uploadJSON(); if (!d) return; if (d.office) setOffice(d.office); if (d.extraItems) setExtraItems(d.extraItems); if (d.mailItems) setMailItems(() => d.mailItems); };
-
 
   const ro = Array.from({ length: cr + 2 }, (_, i) => i + 1), mo = Array.from({ length: 12 }, (_, i) => i + 1), dayo = Array.from({ length: 31 }, (_, i) => i + 1);
 
@@ -289,12 +274,13 @@ export default function DocumentChecklist() {
         <button onClick={() => setExtraItems([...DEFAULT_EXTRA])} className="text-xs px-3 py-1 rounded-lg mt-2" style={{ color: "#4338ca", background: "#eef2ff" }}>デフォルトに戻す</button>
       </div>
 
-      {/* インポート・エクスポート */}
+      {/* インポート・エクスポート（報酬計算と共通） */}
       <div className="rounded-xl p-4 mb-3" style={{ background: "#fff", border: "1.5px solid #e5e9f0" }}>
-        <h3 className="text-xs font-bold mb-3" style={{ color: "#4338ca" }}>データ管理</h3>
+        <h3 className="text-xs font-bold mb-2" style={{ color: "#4338ca" }}>データ管理（設定のバックアップ）</h3>
+        <p className="text-[11px] mb-2" style={{ color: "#8393a7" }}>※ {SETTINGS_NOTE}</p>
         <div className="flex gap-2">
-          <button onClick={exportSettings} className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium" style={{ background: "#eef2ff", color: "#4338ca", border: "1px solid #c7d2fe" }}>設定エクスポート</button>
-          <button onClick={importSettings} className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium" style={{ background: "#f0fdf4", color: "#059669", border: "1px solid #bbf7d0" }}>設定インポート</button>
+          <button onClick={exportAllSettings} className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium" style={{ background: "#eef2ff", color: "#4338ca", border: "1px solid #c7d2fe" }}>全設定をエクスポート</button>
+          <button onClick={importAllSettings} className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium" style={{ background: "#f0fdf4", color: "#059669", border: "1px solid #bbf7d0" }}>全設定をインポート</button>
         </div>
       </div>
     </div>
