@@ -26,6 +26,16 @@ test("f2: 百円未満切捨・0なら0・正なら最低1,000", () => {
   assert.equal(f2(123456), 123400);
 });
 
+// ───────── 既定の標準項目 ─────────
+test("デフォルト標準項目: 登記事項証明書 1,000/600・登記情報 500/330", () => {
+  const cert = DEF_STD_ITEMS.find((s) => s.id === "cert");
+  const info = DEF_STD_ITEMS.find((s) => s.id === "info");
+  assert.equal(cert.fee, 1000);
+  assert.equal(cert.jippi, 600);
+  assert.equal(info.fee, 500);
+  assert.equal(info.jippi, 330);
+});
+
 // ───────── 報酬テーブル参照 ─────────
 test("lk: 上限以下の最初の行 / 0以下は0 / 範囲外は最終行", () => {
   assert.equal(lk(DEF_FT, 0, IX.IN), 0);

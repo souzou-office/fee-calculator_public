@@ -50,7 +50,7 @@ const REMOVED_SC_IDS=["kachitas","sbi"];
 const DEF_UNIT={propAdd:2000,deletionBase:12000,deletionPropAdd:2000,addressBase:12000,addressPropAdd:2000};
 const DEF_STD_ITEMS=[
   {id:"cert",name:"登記事項証明書",fee:1000,jippi:600,unitLabel:"通"},
-  {id:"info",name:"登記情報",fee:500,jippi:331,unitLabel:"件"},
+  {id:"info",name:"登記情報",fee:500,jippi:330,unitLabel:"件"},
 ];
 const COL_NAMES=["上限(万)","移転(設定有)","移転(設定無)","保存","抵当権設定","抵当権のみ","根抵当権設定","根抵当権のみ"];
 
