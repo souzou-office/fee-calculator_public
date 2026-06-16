@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import DocumentChecklist from './DocumentChecklist'
+import Help from './Help'
 
 function Root() {
   const [page, setPage] = useState("calc");
@@ -15,7 +16,7 @@ function Root() {
         fontFamily: "'Noto Sans JP',sans-serif",
       }}>
         <div style={{ maxWidth: 1400, width: "100%", margin: "0 auto", padding: "0 32px", display: "flex", alignItems: "center" }}>
-          {[["calc", "報酬計算"], ["docs", "必要書類一覧"]].map(([k, label]) => (
+          {[["calc", "報酬計算"], ["docs", "必要書類一覧"], ["help", "使い方"]].map(([k, label]) => (
             <button key={k} onClick={() => setPage(k)}
               style={{
                 padding: "14px 24px",
@@ -43,10 +44,12 @@ function Root() {
       }}>
         {page === "calc" ? (
           <App />
-        ) : (
+        ) : page === "docs" ? (
           <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 32px 40px" }}>
             <DocumentChecklist />
           </div>
+        ) : (
+          <Help />
         )}
       </div>
     </>
