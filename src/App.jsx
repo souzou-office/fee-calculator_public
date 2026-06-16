@@ -44,8 +44,6 @@ const DEF_FT=[
 ];
 const DEF_SURCHARGES=[
   {id:"kubun",name:"区分建物",amount:5000},
-  {id:"kachitas",name:"カチタス再販",amount:10000},
-  {id:"sbi",name:"SBI設定",amount:10000},
 ];
 const DEF_UNIT={propAdd:2000,deletionBase:12000,deletionPropAdd:2000,addressBase:12000,addressPropAdd:2000};
 const DEF_STD_ITEMS=[
@@ -157,24 +155,6 @@ function getExpList(counts,stdItems,postage,extras){
 function getXFee(counts,stdItems,extras){
   let f=0;stdItems.forEach(si=>{f+=(counts[si.id]||0)*si.fee;});
   extras.forEach(e=>f+=(Number(e.fee)||0));return f;
-}
-
-function genTSV(ci,items,rows,rate,g){
-  const{unit,stdItems,counts}=g;const L=[];const p=(...v)=>L.push(v.join("\t"));
-  const bd=(ci.billingDate||"").replace(/-/g,"/").replace(/\/0/g,"/");
-  p("事務所",ci.office);p("請求日",bd);p("事件番号",ci.caseNumber);p("得意先",ci.client);
-  ["①","②","③"].forEach((s,i)=>{const c=ci.customers[i]||{};p(`顧客名${s}`,c.name||"",c.title||"");});
-  {const b=ci.banks[0]||{};p("振込先①",b.bankName||"",b.branchName||"",b.accountType||"",b.accountNumber||"");}
-  p("源泉対象",ci.withholding?"1":"0");p("消費税課税","1",`${rate.toFixed(2)}%`);
-  const scTotal=g.surcharges.reduce((s,sc)=>s+(g.enabledSc[sc.id]?sc.amount:0),0);
-  items.forEach((it,idx)=>{const c=calcItem(it,g);const f=idx===0?c.fee+scTotal:c.fee;p("作業項目",itemLabel(it),String(f),String(c.tax));});
-  rows.forEach(row=>{
-    if(row.kind==="std"){const si=stdItems.find(s=>s.id===row.stdId);if(!si)return;const c=row.count||0;if(c>0){const fee=c*si.fee;const jippi=c*si.jippi;if(fee>0||jippi>0)p("作業項目",`${si.name} ${c}${si.unitLabel}`,String(fee),String(jippi));}}
-    else if(row.kind==="postage"){const a=row.amount||0;if(a>0)p("作業項目","郵送費","0",String(a));}
-    else if(row.kind==="extra"){const f=Number(row.fee)||0;const x=Number(row.expense)||0;if(f>0||x>0)p("作業項目",row.name||"その他",String(f),String(x));}
-  });
-  p("備考",ci.note||"");p("メモ",ci.memo||"");
-  return L.join("\n");
 }
 
 // ── UI atoms ──
@@ -516,105 +496,65 @@ function Card({item,index,onUpdate,onRemove,g,scTotal=0}){
     </div>);
 }
 
-// ── Bank ──
-function BankMgr({saved,setSaved,onSelect,onClose}){
-  const[nb,setNb]=useState({label:"",bankName:"",branchName:"",accountType:"普通",accountNumber:""});
-  const add=()=>{if(!nb.bankName||!nb.branchName)return;setSaved(p=>[...p,{...nb,label:nb.label||`${nb.bankName} ${nb.branchName}`,id:Date.now()}]);setNb({label:"",bankName:"",branchName:"",accountType:"普通",accountNumber:""});};
+// ── 明細（画面表示用の内訳） ──
+function buildFeeRows(rows,stdItems){
+  const out=[];
+  rows.forEach(row=>{
+    if(row.kind==="std"){const si=stdItems.find(s=>s.id===row.stdId);if(!si)return;const c=row.count||0;if(c<=0)return;out.push({name:`${si.name} ${c}${si.unitLabel}`,fee:c*si.fee,jippi:c*si.jippi});}
+    else if(row.kind==="postage"){const a=row.amount||0;if(a>0)out.push({name:"郵送費",fee:0,jippi:a});}
+    else if(row.kind==="extra"){const f=Number(row.fee)||0,x=Number(row.expense)||0;if(f>0||x>0)out.push({name:row.name||"その他",fee:f,jippi:x});}
+  });
+  return out;
+}
+function Meisai({items,g,scTotal,rows,stdItems}){
+  const feeRows=buildFeeRows(rows,stdItems);
+  const regLines=items.map((it,i)=>{const c=calcItem(it,g);const fee=i===0?c.fee+scTotal:c.fee;return{it,c,fee,addSc:i===0?scTotal:0};});
+  const regTax=regLines.reduce((s,l)=>s+l.c.tax,0);
+  const regFee=regLines.reduce((s,l)=>s+l.fee,0);
+  const otherFee=feeRows.reduce((s,r)=>s+r.fee,0);
+  const jippiTotal=feeRows.reduce((s,r)=>s+r.jippi,0);
+  const feeExcl=regFee+otherFee;
   return(
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{background:"rgba(0,0,0,0.4)"}}>
-      <div className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl" style={{background:"#fff",maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
-        <div className="flex justify-between items-center p-5 pb-3"><h3 className="text-base font-bold">振込先マスタ</h3><button onClick={onClose} className="text-xl px-2" style={{color:"#8393a7"}}>×</button></div>
-        <div className="flex-1 overflow-y-auto px-5 pb-5">
-          {saved.length>0&&<div className="mb-4">{saved.map(b=>(
-            <div key={b.id} className="flex items-center justify-between p-2.5 rounded-lg mb-1.5" style={{background:"#f5f7fb",border:"1px solid #e5e9f0"}}>
-              <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{b.label}</p><p className="text-xs" style={{color:"#8393a7"}}>{b.bankName} {b.branchName} {b.accountType} {b.accountNumber}</p></div>
-              <div className="flex gap-1 ml-2"><button onClick={()=>{onSelect(b);onClose();}} className="text-xs px-2.5 py-1 rounded-lg text-white" style={{background:"#4338ca"}}>選択</button><button onClick={()=>setSaved(p=>p.filter(x=>x.id!==b.id))} className="text-xs px-2 py-1" style={{color:"#e53e3e"}}>削除</button></div>
-            </div>))}</div>}
-          <div className="p-3 rounded-lg" style={{background:"#f0f9ff",border:"1px solid #bae6fd"}}>
-            <p className="text-xs font-bold mb-2" style={{color:"#0369a1"}}>新規登録</p>
-            <Inp label="表示名" value={nb.label} onChange={v=>setNb(p=>({...p,label:v}))} type="text" placeholder="メイン口座" />
-            <div className="grid grid-cols-2 gap-x-2"><Inp label="銀行名" value={nb.bankName} onChange={v=>setNb(p=>({...p,bankName:v}))} type="text" /><Inp label="支店名" value={nb.branchName} onChange={v=>setNb(p=>({...p,branchName:v}))} type="text" /></div>
-            <div className="grid grid-cols-2 gap-x-2"><Sel label="種別" value={nb.accountType} onChange={v=>setNb(p=>({...p,accountType:v}))} options={[{value:"普通",label:"普通"},{value:"当座",label:"当座"}]} /><Inp label="口座番号" value={nb.accountNumber} onChange={v=>setNb(p=>({...p,accountNumber:v}))} type="text" /></div>
-            <button onClick={add} className="w-full py-2 rounded-lg text-sm font-medium text-white mt-1" style={{background:nb.bankName&&nb.branchName?"#4338ca":"#c5cdd8"}} disabled={!nb.bankName||!nb.branchName}>登録</button>
+    <div className="rounded-xl p-5 mb-4" style={{background:"#fff",border:"1px solid #e5e9f0"}}>
+      <h3 className="text-sm font-bold mb-3" style={{color:"#4338ca"}}>ご請求明細</h3>
+
+      <p className="text-xs font-bold mb-1" style={{color:"#566275"}}>登記報酬・登録免許税</p>
+      {regLines.map(({it,c,fee,addSc},i)=>(
+        <div key={i} className="py-1.5" style={{borderBottom:"1px solid #f0f3f8"}}>
+          <div className="flex justify-between items-baseline gap-2">
+            <span className="text-sm flex-1 min-w-0" style={{color:"#1a2233"}}>{itemLabel(it)}</span>
+            <span className="text-sm font-medium flex-shrink-0" style={{fontVariantNumeric:"tabular-nums"}}>{fmt(fee)}</span>
+          </div>
+          <div className="text-xs mt-0.5" style={{color:"#8393a7"}}>
+            {c.isSimpleType?`基本（${c.col}）`:`基本（${c.col}/${fmtM(c.lv)}）`} {fmt(c.fb)}
+            {c.ep>0&&`　不動産加算 ${fmt(c.ep)}`}
+            {addSc>0&&`　加算 ${fmt(addSc)}`}
+            <span style={{color:"#92400e"}}>　登免税 {fmt(c.tax)}</span>
           </div>
         </div>
-      </div>
-    </div>);
-}
+      ))}
 
-// ── Export ──
-const CLIENTS=[
-  "フラックスコーポレーション株式会社","Ｎｉｋｋｏｒｉ　Ｈｏｕｓｅ株式会社","株式会社令和不動産",
-  "株式会社ＡＲＣＨＩ　ＰＲＯＤＵＣＴＳ","株式会社エバーレンディング","まごころ不動産株式会社",
-  "建築プランナー株式会社","株式会社プロムレット","西日本シティ銀行大橋駅前支店",
-  "西日本シティ銀行　白木原支店","佐賀銀行　春日南支店","福岡銀行　二日市支店",
-  "福岡銀行　春日原支店","ハナ銀行","株式会社ファミリーライフサービス",
-  "ランドスペース有限会社","株式会社エム不動産","株式会社大興不動産",
-  "三真不動産株式会社","株式会社ＳＥＣ","株式会社東武住販",
-  "株式会社エンイノベーションズ","株式会社ＵＭＩプランニング","株式会社サンハウス",
-  "株式会社サムライフ","ｔｒｙ株式会社","株式会社ファレノホールディングス",
-  "ブルーエステート株式会社","株式会社ルームコンサルティング","株式会社ノヴァイフ",
-  "ＬＵＣＫＹ　ＦＩＥＬＤ株式会社","株式会社ＰＬＥＡＳＴ","積水ハウス不動産九州株式会社",
-  "株式会社ベストブライト","積水ハウス株式会社","悠悠ホーム株式会社",
-  "株式会社テンマインド","株式会社エステート三丁目","六家株式会社",
-  "株式会社カチタス飯塚店","福徳ハウジング","三幸不動産",
-  "三井住友トラスト不動産株式会社","西鉄不動産株式会社大野城駅前店","西鉄不動産株式会社二日市店",
-  "株式会社ＮＩパートーナーズ","株式会社カチタス北九州店","有限会社セゾンホーム",
-  "株式会社コスモサービス","不動産マーケティング福岡株式会社","株式会社ほがらかハウジング",
-  "株式会社Ｗａｋｗｏｒｋｓ","有限会社シーズコーポレーション","株式会社フェリスマネジメント",
-  "株式会社レジアスコーポレーション","株式会社ベーシック","株式会社フォレストヴィラホーム",
-  "西鉄不動産小郡三国が丘店","株式会社愛和不動産","株式会社サンコービルド",
-  "行政書士松田知樹","弁護士柴山真人","税理士平田和寛",
-  "土地家屋調査士三宅裕司","税理士飯塚貴司","税理士法人たかはし事務所",
-  "弁護士川﨑尊義","税理士大場雅昭","髙田宏一郎",
-  "税理士・行政書士三好美貴","行政書士保利国際法務事務所","弁護士鍋嶋隆志",
-  "行政書士木村和生","税理士法人吉田会計事務所","税理士上村寿映明",
-  "税理士法人Gardens","陳海燕国際法務事務所","株式会社DOORS",
-  "株式会社Deep30","不動産登記（一般）","不動産登記（相続）",
-  "商業登記","その他の業務","マザーホーム㈱",
-  "佐賀共栄銀行","福岡信用金庫",
-];
-function Export({ci,setCi,items,rows,rate,g,onClose,saved,setSaved}){
-  const u=p=>setCi({...ci,...p});const uc=(i,p)=>{const c=[...ci.customers];c[i]={...(c[i]||{}),...p};u({customers:c});};
-  const ub=(i,p)=>{const b=[...ci.banks];b[i]={...(b[i]||{}),...p};u({banks:b});};
-  const[showBM,setShowBM]=useState(false);
-  const bankInit=useRef(false);
-  if(!bankInit.current&&saved.length>0&&!(ci.banks[0]||{}).bankName){
-    bankInit.current=true;const bk=saved[0];const nb=[...ci.banks];nb[0]={bankName:bk.bankName,branchName:bk.branchName,accountType:bk.accountType,accountNumber:bk.accountNumber};setCi({...ci,banks:nb});
-  }
-  const tsv=genTSV(ci,items,rows,rate,g);
-  const doCopy=()=>navigator.clipboard.writeText(tsv).then(()=>alert("コピーしました！"));
-  const doDL=()=>{const b=new Blob(["\uFEFF"+tsv],{type:"text/tab-separated-values;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`帳票_${ci.caseNumber||"案件"}.tsv`;a.click();};
-  const sb=(bk,sl)=>ub(sl,{bankName:bk.bankName,branchName:bk.branchName,accountType:bk.accountType,accountNumber:bk.accountNumber});
-  return(
-    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center" style={{background:"rgba(0,0,0,0.4)"}}>
-      <div className="w-full max-w-xl rounded-t-2xl sm:rounded-2xl" style={{background:"#fff",maxHeight:"90vh",display:"flex",flexDirection:"column"}}>
-        <div className="flex justify-between items-center px-5 pt-5 pb-2 flex-shrink-0"><h3 className="text-base font-bold">帳票エクスポート</h3><button onClick={onClose} className="text-xl px-2" style={{color:"#8393a7"}}>×</button></div>
-        <div className="flex-1 overflow-y-auto px-5 pb-3">
-          <div className="grid grid-cols-2 gap-x-3"><Inp label="事務所" value={ci.office} onChange={v=>u({office:v})} type="text" /><Inp label="請求日" value={ci.billingDate} onChange={v=>u({billingDate:v})} type="date" /></div>
-          <div className="grid grid-cols-2 gap-x-3"><Inp label="事件番号" value={ci.caseNumber} onChange={v=>u({caseNumber:v})} type="text" />
-            <div className="mb-3"><label className="block text-xs font-medium mb-1" style={{color:"#566275"}}>得意先</label>
-              <input list="dl-clients" type="text" value={ci.client} onChange={e=>u({client:e.target.value})}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none transition-all"
-                style={{background:"#f0f3f8",border:"1.5px solid #dce1ea",color:"#1a2233"}}
-                onFocus={e=>{e.target.style.borderColor="#4338ca";e.target.style.background="#fff"}}
-                onBlur={e=>{e.target.style.borderColor="#dce1ea";e.target.style.background="#f0f3f8"}} />
-              <datalist id="dl-clients">{CLIENTS.map(c=><option key={c} value={c}/>)}</datalist></div></div>
-          <h4 className="text-xs font-bold mt-2 mb-2" style={{color:"#566275"}}>顧客名</h4>
-          {[0,1,2].map(i=><div key={i} className="grid gap-x-2 mb-1" style={{gridTemplateColumns:"1fr auto"}}><Inp placeholder={`顧客名${["①","②","③"][i]}`} value={(ci.customers[i]||{}).name||""} onChange={v=>uc(i,{name:v})} type="text" /><div style={{width:90}}><Sel value={(ci.customers[i]||{}).title||""} onChange={v=>uc(i,{title:v})} options={[{value:"",label:"なし"},{value:"様",label:"様"},{value:"御中",label:"御中"}]} /></div></div>)}
-          <h4 className="text-xs font-bold mt-2 mb-2 flex items-center justify-between" style={{color:"#566275"}}><span>振込先</span><button onClick={()=>setShowBM(true)} className="text-xs px-2 py-1 rounded-lg" style={{background:"#eef2ff",color:"#4338ca"}}>マスタ</button></h4>
-          <div className="mb-2"><div className="flex items-center gap-1 mb-1"><span className="text-xs" style={{color:"#8393a7"}}>①</span>{saved.length>0&&<select className="text-xs px-2 py-0.5 rounded border ml-auto" style={{color:"#4338ca",borderColor:"#d4deff",background:"#eef2ff"}} value="" onChange={e=>{const b=saved.find(x=>String(x.id)===e.target.value);if(b)sb(b,0);}}><option value="">選択...</option>{saved.map(b=><option key={b.id} value={b.id}>{b.label}</option>)}</select>}</div><div className="grid grid-cols-4 gap-x-2"><Inp placeholder="銀行名" value={(ci.banks[0]||{}).bankName||""} onChange={v=>ub(0,{bankName:v})} type="text" /><Inp placeholder="支店名" value={(ci.banks[0]||{}).branchName||""} onChange={v=>ub(0,{branchName:v})} type="text" /><Inp placeholder="種別" value={(ci.banks[0]||{}).accountType||""} onChange={v=>ub(0,{accountType:v})} type="text" /><Inp placeholder="口座番号" value={(ci.banks[0]||{}).accountNumber||""} onChange={v=>ub(0,{accountNumber:v})} type="text" /></div></div>
-          <div className="mt-2"><Chk label="源泉対象" checked={!!ci.withholding} onChange={()=>u({withholding:!ci.withholding})} /></div>
-          <div className="grid grid-cols-2 gap-x-3"><Inp label="備考" value={ci.note} onChange={v=>u({note:v})} type="text" /><Inp label="メモ" value={ci.memo} onChange={v=>u({memo:v})} type="text" /></div>
-          <h4 className="text-xs font-bold mt-3 mb-2" style={{color:"#566275"}}>プレビュー</h4>
-          <div className="p-3 rounded-lg text-xs overflow-x-auto" style={{background:"#f5f7fb",fontFamily:"'Courier New',monospace",whiteSpace:"pre",lineHeight:1.7,color:"#3a4557",maxHeight:180,overflowY:"auto"}}>{tsv}</div>
-        </div>
-        <div className="flex gap-3 px-5 py-4 flex-shrink-0" style={{borderTop:"1px solid #e5e9f0",borderRadius:"0 0 1rem 1rem"}}>
-          <button onClick={doCopy} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{background:"#eef2ff",color:"#4338ca",border:"1px solid #d4deff"}}>クリップボードにコピー</button>
-          <button onClick={doDL} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white" style={{background:"#4338ca"}}>TSVダウンロード</button>
-        </div>
+      {feeRows.length>0&&<>
+        <p className="text-xs font-bold mb-1 mt-3" style={{color:"#566275"}}>証明書・実費・その他</p>
+        {feeRows.map((r,i)=>(
+          <div key={i} className="flex justify-between items-baseline gap-2 py-1.5" style={{borderBottom:"1px solid #f0f3f8"}}>
+            <span className="text-sm flex-1 min-w-0" style={{color:"#1a2233"}}>{r.name}</span>
+            <span className="text-xs flex-shrink-0" style={{fontVariantNumeric:"tabular-nums"}}>
+              {r.fee>0&&<span style={{color:"#4338ca"}}>報酬 {fmt(r.fee)}</span>}
+              {r.fee>0&&r.jippi>0&&"　"}
+              {r.jippi>0&&<span style={{color:"#92400e"}}>実費 {fmt(r.jippi)}</span>}
+            </span>
+          </div>
+        ))}
+      </>}
+
+      <div className="mt-3 pt-2" style={{borderTop:"1px dashed #dce1ea"}}>
+        <Rw label="報酬（税抜）小計" value={fmt(feeExcl)} bold />
+        <Rw label="　うち登記報酬" value={fmt(regFee)} sub />
+        {otherFee>0&&<Rw label="　うち証明書・その他報酬" value={fmt(otherFee)} sub />}
+        <Rw label="登録免許税 小計" value={fmt(regTax)} />
+        {jippiTotal>0&&<Rw label="実費・立替金 小計（非課税）" value={fmt(jippiTotal)} />}
       </div>
-      {showBM&&<BankMgr saved={saved} setSaved={setSaved} onSelect={b=>sb(b,0)} onClose={()=>setShowBM(false)} />}
     </div>);
 }
 
@@ -634,9 +574,7 @@ export default function App(){
   const counts=useMemo(()=>{const c={};rows.forEach(r=>{if(r.kind==="std")c[r.stdId]=r.count||0;});return c;},[rows]);
   const postage=useMemo(()=>(rows.find(r=>r.kind==="postage")||{}).amount||0,[rows]);
   const extras=useMemo(()=>rows.filter(r=>r.kind==="extra"),[rows]);
-  const[showEx,setShowEx]=useState(false);
   const[showCfg,setShowCfg]=useState(false);
-  const[saved,setSaved]=useState([]);
   const[housingCert,setHC]=useState("none");
   const[ft,setFt]=useState(()=>DEF_FT.map(r=>[...r]));
   const[unit,setUnit]=useState({...DEF_UNIT});
@@ -644,10 +582,7 @@ export default function App(){
   const[stdItems,setStdItems]=useState(()=>DEF_STD_ITEMS.map(s=>({...s})));
   const[enabledSc,setEnabledSc]=useState({});
   const[commonOpen,setCommonOpen]=useState(true);
-  const[ci,setCi]=useState({office:"司法書士法人そうぞう",billingDate:new Date().toISOString().slice(0,10),caseNumber:"",client:"",customers:[{title:"様"},{},{}],banks:[{}],withholding:false,note:"",memo:""});
 
-  useEffect(()=>{try{const r=localStorage.getItem("saved-banks");if(r){const p=JSON.parse(r);if(Array.isArray(p))setSaved(p);}}catch{};},[]);
-  useEffect(()=>{try{localStorage.setItem("saved-banks",JSON.stringify(saved));}catch{};},[saved]);
   useEffect(()=>{try{const r=localStorage.getItem("fee-config-v4");if(r){const d=JSON.parse(r);if(d.ft)setFt(d.ft);if(d.unit)setUnit(u=>({...u,...d.unit}));if(d.surcharges)setSurcharges(d.surcharges);if(Array.isArray(d.stdItems))setStdItems(d.stdItems.filter(si=>si&&si.id&&si.name));}}catch{};},[]);
   useEffect(()=>{try{localStorage.setItem("fee-config-v4",JSON.stringify({ft,unit,surcharges,stdItems}));}catch{};},[ft,unit,surcharges,stdItems]);
 
@@ -687,7 +622,6 @@ export default function App(){
             <h2 className="text-base font-bold" style={{color:"#1a2233"}}>取引項目</h2>
             <div className="flex gap-2">
               <button onClick={()=>setShowCfg(true)} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{background:"#fff",border:"1.5px solid #c7d2fe",color:"#4338ca"}}>設定</button>
-              <button onClick={()=>setShowEx(true)} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{background:"#4338ca",color:"#fff"}}>帳票出力</button>
             </div>
           </div>
           <div className="rounded-xl p-5 mb-5" style={{background:"#fff",border:"1.5px solid #c7d2fe",boxShadow:"0 2px 8px rgba(99,102,241,0.08)"}}>
@@ -796,6 +730,8 @@ export default function App(){
 
           <div className="rounded-xl p-5 mb-4" style={{background:"#fff",border:"1px solid #e5e9f0"}}><Inp label="消費税率" value={rate} onChange={setRate} suffix="%" min={0} step={1} /></div>
 
+          <Meisai items={items} g={g} scTotal={scTotal} rows={rows} stdItems={stdItems} />
+
           <div className="rounded-xl p-5 mb-4" style={{background:"linear-gradient(135deg,#4338ca,#3730a3)",color:"#fff"}}>
             <h3 className="text-sm font-bold mb-3" style={{color:"rgba(255,255,255,0.7)"}}>合計</h3>
             {[["報酬（税抜）",fmt(tot.tf)],[`消費税（${rate}%）`,fmt(tot.ct)],["報酬（税込）",fmt(tot.tf+tot.ct)],["登録免許税",fmt(tot.tt)],...(tot.et>0?[["実費・立替金",fmt(tot.et)]]:[])]
@@ -804,12 +740,10 @@ export default function App(){
               <div className="flex justify-between items-baseline"><span className="font-bold">合計請求額</span><span className="text-2xl font-bold" style={{fontVariantNumeric:"tabular-nums"}}>{fmt(tot.g)}</span></div>
             </div>
           </div>
-          <button onClick={()=>setShowEx(true)} className="w-full py-3 rounded-xl text-sm font-bold text-white mb-4 hover:shadow-lg" style={{background:"#4338ca"}}>帳票システム用データを出力</button>
         </div>
 
         <p className="text-xs text-center px-4" style={{color:"#a0aec0",gridColumn:"1 / -1"}}>※ 参考値。土地売買15/1000は令和8年3月31日まで。住宅用家屋証明は令和9年3月31日まで。</p>
       </main>
       {showCfg&&<Settings ft={ft} setFt={setFt} unit={unit} setUnit={setUnit} surcharges={surcharges} setSurcharges={setSurcharges} stdItems={stdItems} setStdItems={setStdItems} onClose={()=>setShowCfg(false)} />}
-      {showEx&&<Export ci={ci} setCi={setCi} items={items} rows={rows} rate={rate} g={g} onClose={()=>setShowEx(false)} saved={saved} setSaved={setSaved} />}
     </div>);
 }

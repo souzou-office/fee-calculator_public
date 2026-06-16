@@ -1,6 +1,6 @@
 // src/DocumentChecklist.jsx
 // 必要書類一覧作成ツール — fee-calculator統合版
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 
 // ========== IMPORT / EXPORT HELPERS ==========
 function downloadJSON(data, filename) {
@@ -16,7 +16,8 @@ function uploadJSON() {
 }
 
 // ========== DATA ==========
-const DEFAULT_OFFICE = { zip: "〒815-0033", address: "福岡市南区大橋一丁目４番１９号", name: "司法書士法人そうぞう", rep: "代表社員 浦 志寿馬　代表社員 池田 龍太", tel: "092-707-8550", fax: "092-510-0862", email: "info@souzou-office.jp" };
+const DEFAULT_OFFICE = { zip: "", address: "", name: "", rep: "", tel: "", fax: "", email: "" };
+const OFFICE_PLACEHOLDER = { zip: "〒000-0000", address: "○○県○○市○○町1-2-3", name: "○○司法書士事務所", rep: "司法書士 ○○ ○○", tel: "000-0000-0000", fax: "000-0000-0000", email: "info@example.com" };
 const INTRO = { default: "後記不動産に関する不動産取引に際して、下記書類等を御準備頂きますようお願い申し上げます。", mail: "後記不動産に関するお取引に際し、送付させて頂いた各書類への署名捺印 ならびに下記の必要書類をご準備頂きまして、同封のレターパックにてご返送くださいますようお願い申し上げます。" };
 const COUNT_OPTIONS = ["", "１通", "２通", "３通", "４通", "５通"];
 const SELLER_INDIVIDUAL = [
@@ -109,6 +110,22 @@ export default function DocumentChecklist() {
   const [newInput, setNewInput] = useState("");
   const [showExtra, setShowExtra] = useState(false);
   const [customInput, setCustomInput] = useState("");
+
+  // 事務所情報・各種テンプレートを localStorage に保存（事務所ごとに一度入力すれば保持）
+  useEffect(() => {
+    try {
+      const r = localStorage.getItem("doc-checklist-config-v1");
+      if (r) {
+        const d = JSON.parse(r);
+        if (d.office) setOffice(o => ({ ...o, ...d.office }));
+        if (Array.isArray(d.extraItems)) setExtraItems(d.extraItems);
+        if (Array.isArray(d.mailItems)) setMailItemsRaw(d.mailItems);
+      }
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("doc-checklist-config-v1", JSON.stringify({ office, extraItems, mailItems: mailItemsRaw })); } catch {}
+  }, [office, extraItems, mailItemsRaw]);
 
   const dragRef = useRef({ from: null, to: null });
 
@@ -229,10 +246,11 @@ export default function DocumentChecklist() {
         {[["zip","郵便番号"],["address","住所"],["name","事務所名"],["rep","代表者"],["tel","TEL"],["fax","FAX"],["email","メール"]].map(([k,l]) => (
           <div key={k} className="flex items-center gap-2 mb-2">
             <label className="text-xs font-medium w-16 shrink-0" style={{ color: "#566275" }}>{l}</label>
-            <input className="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f0f3f8", border: "1.5px solid #dce1ea" }} value={office[k]} onChange={e => setOffice(p => ({ ...p, [k]: e.target.value }))} />
+            <input className="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f0f3f8", border: "1.5px solid #dce1ea" }} value={office[k]} placeholder={OFFICE_PLACEHOLDER[k]} onChange={e => setOffice(p => ({ ...p, [k]: e.target.value }))} />
           </div>
         ))}
-        <button onClick={() => setOffice({ ...DEFAULT_OFFICE })} className="text-xs px-3 py-1 rounded-lg mt-1" style={{ color: "#4338ca", background: "#eef2ff" }}>デフォルトに戻す</button>
+        <p className="text-[11px] mb-2" style={{ color: "#8393a7" }}>※ 入力内容はこのブラウザに保存され、プレビュー上部の差出人として表示されます。</p>
+        <button onClick={() => setOffice({ ...DEFAULT_OFFICE })} className="text-xs px-3 py-1 rounded-lg mt-1" style={{ color: "#4338ca", background: "#eef2ff" }}>クリア</button>
       </div>
 
       {/* 郵送時の追加書類 */}
