@@ -82,7 +82,7 @@ function ExtraItem({item,index,total,onChange,onRemove,onMove}){
 function swap(arr,i,j){const n=[...arr];[n[i],n[j]]=[n[j],n[i]];return n;}
 
 // ── Settings ──
-function Settings({ft,setFt,unit,setUnit,surcharges,setSurcharges,stdItems,setStdItems,onClose}){
+function Settings({ft,setFt,unit,setUnit,surcharges,setSurcharges,stdItems,setStdItems,rate,setRate,onClose}){
   const[tab,setTab]=useState("surcharge");
   const[editCell,setEditCell]=useState(null);
   const[editVal,setEditVal]=useState("");
@@ -157,6 +157,7 @@ function Settings({ft,setFt,unit,setUnit,surcharges,setSurcharges,stdItems,setSt
 
             <h4 className="text-xs font-bold mt-5 mb-3" style={{color:"#4338ca"}}>その他単価</h4>
             <Inp label="不動産加算（移転・保存・設定 1個あたり）" value={unit.propAdd} onChange={v=>setUnit({...unit,propAdd:v})} suffix="円" />
+            <Inp label="消費税率" value={rate} onChange={setRate} suffix="%" min={0} step={1} note="通常は10%です（ご請求明細に反映）" />
             <button onClick={()=>{if(confirm("デフォルトに戻しますか？"))setUnit({...DEF_UNIT});}}
               className="mt-1 text-xs px-3 py-1.5 rounded-lg" style={{color:"#e53e3e",background:"#fef2f2"}}>デフォルトに戻す</button>
           </div>}
@@ -416,8 +417,8 @@ export default function App(){
   const[enabledSc,setEnabledSc]=useState({});
   const[commonOpen,setCommonOpen]=useState(true);
 
-  useEffect(()=>{try{const r=localStorage.getItem("fee-config-v4");if(r){const d=JSON.parse(r);if(d.ft)setFt(d.ft);if(d.unit)setUnit(u=>({...u,...d.unit}));if(Array.isArray(d.surcharges))setSurcharges(d.surcharges.filter(s=>s&&!REMOVED_SC_IDS.includes(s.id)));if(Array.isArray(d.stdItems))setStdItems(d.stdItems.filter(si=>si&&si.id&&si.name).map(si=>si.id==="info"&&si.jippi===331?{...si,jippi:330}:si));}}catch{};},[]);
-  useEffect(()=>{try{localStorage.setItem("fee-config-v4",JSON.stringify({ft,unit,surcharges,stdItems}));}catch{};},[ft,unit,surcharges,stdItems]);
+  useEffect(()=>{try{const r=localStorage.getItem("fee-config-v4");if(r){const d=JSON.parse(r);if(d.ft)setFt(d.ft);if(d.unit)setUnit(u=>({...u,...d.unit}));if(Array.isArray(d.surcharges))setSurcharges(d.surcharges.filter(s=>s&&!REMOVED_SC_IDS.includes(s.id)));if(Array.isArray(d.stdItems))setStdItems(d.stdItems.filter(si=>si&&si.id&&si.name).map(si=>si.id==="info"&&si.jippi===331?{...si,jippi:330}:si));if(typeof d.rate==="number")setRate(d.rate);}}catch{};},[]);
+  useEffect(()=>{try{localStorage.setItem("fee-config-v4",JSON.stringify({ft,unit,surcharges,stdItems,rate}));}catch{};},[ft,unit,surcharges,stdItems,rate]);
 
   const hasTr=items.some(i=>i.type==="transfer");
   const hasMtg=items.some(i=>["mortgage","rootMortgage"].includes(i.type));
@@ -556,14 +557,12 @@ export default function App(){
             </div>}
           </div>
 
-          <div className="rounded-xl p-5 mb-4" style={{background:"#fff",border:"1px solid #e5e9f0"}}><Inp label="消費税率" value={rate} onChange={setRate} suffix="%" min={0} step={1} /></div>
-
           <Meisai items={items} g={g} scTotal={scTotal} rows={rows} stdItems={stdItems} rate={rate} />
 
         </div>
 
         <p className="text-xs text-center px-4" style={{color:"#a0aec0",gridColumn:"1 / -1"}}>※ 参考値。土地売買15/1000は令和8年3月31日まで。住宅用家屋証明は令和9年3月31日まで。</p>
       </main>
-      {showCfg&&<Settings ft={ft} setFt={setFt} unit={unit} setUnit={setUnit} surcharges={surcharges} setSurcharges={setSurcharges} stdItems={stdItems} setStdItems={setStdItems} onClose={()=>setShowCfg(false)} />}
+      {showCfg&&<Settings ft={ft} setFt={setFt} unit={unit} setUnit={setUnit} surcharges={surcharges} setSurcharges={setSurcharges} stdItems={stdItems} setStdItems={setStdItems} rate={rate} setRate={setRate} onClose={()=>setShowCfg(false)} />}
     </div>);
 }
