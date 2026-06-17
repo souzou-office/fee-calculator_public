@@ -11,10 +11,10 @@ function Root() {
   return (
     <>
       <style>{`
-        .toki-logo-img { height: 40px; width: auto; display: block; }
+        .toki-logo-img { height: 52px; width: auto; display: block; }
         @media (max-width: 640px) {
-          .toki-logo-img { height: 30px; }
-          .toki-tab { padding: 13px 13px !important; font-size: 13px !important; }
+          .toki-logo-img { height: 38px; }
+          .toki-tab { padding: 16px 14px !important; font-size: 13px !important; }
         }
       `}</style>
       {/* Page-level tab bar */}
@@ -31,7 +31,7 @@ function Root() {
             {[["calc", "報酬計算"], ["docs", "必要書類一覧"], ["help", "使い方"]].map(([k, label]) => (
               <button key={k} onClick={() => setPage(k)} className="toki-tab"
                 style={{
-                  padding: "14px 24px",
+                  padding: "22px 24px",
                   fontSize: 14,
                   fontWeight: page === k ? 700 : 500,
                   color: page === k ? "#4338ca" : "#6b7689",
