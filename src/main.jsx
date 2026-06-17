@@ -20,7 +20,9 @@ function Root() {
       {/* Page-level tab bar */}
       <div style={{
         position: "sticky", top: 0, zIndex: 50,
-        background: "linear-gradient(135deg,#312e81,#4338ca)",
+        background: "#fff",
+        borderBottom: "1px solid #e5e9f0",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         fontFamily: "'Noto Sans JP',sans-serif",
       }}>
         <div style={{ maxWidth: 1400, width: "100%", margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", gap: 20 }}>
@@ -32,10 +34,10 @@ function Root() {
                   padding: "14px 24px",
                   fontSize: 14,
                   fontWeight: page === k ? 700 : 500,
-                  color: page === k ? "#fff" : "rgba(255,255,255,0.55)",
+                  color: page === k ? "#4338ca" : "#6b7689",
                   background: "none",
                   border: "none",
-                  borderBottom: page === k ? "3px solid #fff" : "3px solid transparent",
+                  borderBottom: page === k ? "3px solid #4338ca" : "3px solid transparent",
                   cursor: "pointer",
                   fontFamily: "inherit",
                   transition: "all 0.15s",
