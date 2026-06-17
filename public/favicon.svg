@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="登記積算">
+  <defs>
+    <linearGradient id="tokiGrad" x1="8%" y1="4%" x2="92%" y2="96%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="48%" stop-color="#4338ca"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <path d="M60 8 L104 34 L104 86 L60 112 L16 86 L16 34 Z" fill="url(#tokiGrad)"/>
+  <g stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.9">
+    <line x1="61" y1="56" x2="83" y2="51"/>
+    <line x1="61" y1="65" x2="79" y2="60"/>
+    <line x1="61" y1="74" x2="75" y2="69"/>
+  </g>
+  <g fill="#ffffff">
+    <rect x="30" y="33" width="46" height="9" rx="2"/>
+    <rect x="48.5" y="33" width="9" height="47" rx="2"/>
+  </g>
+  <g stroke="#ffffff" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" fill="none" opacity="0.92">
+    <polyline points="33,88 60,101 87,88"/>
+    <polyline points="40,101 60,111 80,101"/>
+  </g>
+</svg>
