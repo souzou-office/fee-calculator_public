@@ -10,8 +10,8 @@ export function Logo() {
         display: "inline-flex",
         alignItems: "center",
         background: "#fff",
-        borderRadius: 10,
-        padding: "6px 13px",
+        borderRadius: 9,
+        padding: "5px 12px",
         boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
       }}
     >
