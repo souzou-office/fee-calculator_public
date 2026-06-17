@@ -11,9 +11,10 @@ function Root() {
   return (
     <>
       <style>{`
+        .toki-logo-img { height: 32px; width: auto; display: block; }
         @media (max-width: 640px) {
-          .toki-word { display: none !important; }
-          .toki-tab { padding: 13px 14px !important; font-size: 13px !important; }
+          .toki-logo-img { height: 25px; }
+          .toki-tab { padding: 13px 13px !important; font-size: 13px !important; }
         }
       `}</style>
       {/* Page-level tab bar */}
