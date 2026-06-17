@@ -6,10 +6,12 @@ const C = "#4338ca";
 // ---- 文章用パーツ ----
 function Section({ title, children }) {
   return (
-    <div className="rounded-xl p-5 mb-4" style={{ background: "#fff", border: "1px solid #e5e9f0" }}>
-      <h2 className="text-sm font-bold mb-3" style={{ color: C }}>{title}</h2>
-      <div style={{ fontSize: 13, lineHeight: 1.85, color: "#3a4557" }}>{children}</div>
-    </div>
+    <details className="help-sec rounded-xl mb-3" style={{ background: "#fff", border: "1px solid #e5e9f0" }}>
+      <summary style={{ padding: "13px 18px", fontSize: 13, fontWeight: 700, color: C, display: "flex", alignItems: "center", gap: 8 }}>
+        <span className="mk" style={{ fontSize: 10, color: "#8393a7" }}>▶</span>{title}
+      </summary>
+      <div style={{ padding: "0 18px 16px", fontSize: 13, lineHeight: 1.85, color: "#3a4557" }}>{children}</div>
+    </details>
   );
 }
 function Li({ children }) {
@@ -21,6 +23,14 @@ function Li({ children }) {
   );
 }
 const B = ({ children }) => <b style={{ color: "#1a2233" }}>{children}</b>;
+function Step({ n, title, children }) {
+  return (
+    <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+      <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: "50%", background: C, color: "#fff", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{n}</span>
+      <div><B>{title}</B>　{children}</div>
+    </div>
+  );
+}
 
 // ---- 図解用パーツ ----
 const Badge = ({ n }) => (
@@ -173,15 +183,32 @@ export default function Help() {
   return (
     <div style={{ maxWidth: 880, margin: "0 auto", padding: "24px 24px 56px" }}>
       <h1 className="text-xl font-bold mb-1" style={{ color: "#1a2233" }}>使い方ガイド</h1>
+      <style>{`
+        .help-sec > summary { list-style: none; cursor: pointer; }
+        .help-sec > summary::-webkit-details-marker { display: none; }
+        .help-sec > summary .mk { display: inline-block; transition: transform .15s; }
+        .help-sec[open] > summary .mk { transform: rotate(90deg); }
+      `}</style>
+
       <p className="mb-4" style={{ fontSize: 13, color: "#8393a7" }}>
         司法書士向けの「報酬・登録免許税の自動計算」と「必要書類一覧の作成」ツールです。
-        入力内容・設定は<B>お使いのブラウザ内（localStorage）に保存</B>され、サーバーには送信されません。
-        <br />※ 図はイメージ（簡易図解）で、実際の画面とは細部が異なります。
+        入力・設定は<B>このブラウザに保存</B>されます（サーバーには送信されません）。
       </p>
 
-      <Figure caption="① 取引項目を追加・入力　② 共通設定（加算・住宅用家屋証明書）　③ 費用明細（謄本・登記情報・郵送・自由入力）　④ ご請求明細（報酬＝左／登免税・実費＝右・合計請求額）">
+      <div className="rounded-xl p-5 mb-4" style={{ background: "#eef2ff", border: "1.5px solid #c7d2fe" }}>
+        <h2 className="text-sm font-bold mb-3" style={{ color: C }}>さっと使う（3ステップ）</h2>
+        <div style={{ fontSize: 13, lineHeight: 1.8, color: "#3a4557" }}>
+          <Step n="1" title="入力する">「報酬計算」タブで取引項目を追加（<B>＋移転</B>・<B>＋抵当権</B> など）し、評価額や債権額を入れます。</Step>
+          <Step n="2" title="条件をチェック">当てはまれば「共通設定」で<B>区分建物・住宅用家屋証明書</B>にチェック。証明書の通数や郵送費は右の「費用明細」で入力します。</Step>
+          <Step n="3" title="確認・出力">右下の紫の<B>「ご請求明細」</B>で合計請求額を確認。必要書類は上の<B>「必要書類一覧」</B>タブで作成して<B>PDF出力</B>できます。</Step>
+        </div>
+      </div>
+
+      <Figure caption="画面の全体イメージ。①取引項目 ②共通設定 ③費用明細 ④ご請求明細（報酬＝左／登免税・実費＝右）　※図はイメージです">
         <DiagCalc />
       </Figure>
+
+      <p style={{ fontSize: 12, color: "#8393a7", margin: "10px 2px 6px" }}>▼ もっと詳しく（各項目をタップで開けます）</p>
 
       <Section title="1. 報酬計算 ― 取引項目">
         <ul style={{ margin: 0, padding: 0 }}>
