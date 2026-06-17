@@ -89,7 +89,12 @@ export default function DocumentChecklist() {
   const now = new Date();
   const [dp, setDp] = useState({ r: cr, m: now.getMonth() + 1, d: now.getDate() });
   const dw = toWareki(dp.r + 2018, dp.m, dp.d);
-  const [meta, setMeta] = useState({ clientName: "", honorific: "様", propertyDescs: [""], registryAddress: "" });
+  const [meta, setMeta] = useState({ propertyDescs: [""] });
+  // 宛名・敬称・登記住所は売主／買主で別々に保持（物件・日付は共通）
+  const [parties, setParties] = useState({
+    seller: { clientName: "", honorific: "様", registryAddress: "" },
+    buyer: { clientName: "", honorific: "様", registryAddress: "" },
+  });
   const [office, setOffice] = useState({ ...DEFAULT_OFFICE });
   const [extraItems, setExtraItems] = useState([...DEFAULT_EXTRA]);
   const [mailItemsRaw, setMailItemsRaw] = useState([...DEFAULT_MAIL_ITEMS]);
@@ -118,6 +123,8 @@ export default function DocumentChecklist() {
   const dragRef = useRef({ from: null, to: null });
 
   const ce = entity[tab], cm = isMail[tab], ck = `${tab}_${ce}_${cm}`;
+  const party = parties[tab];
+  const setParty = patch => setParties(p => ({ ...p, [tab]: { ...p[tab], ...patch } }));
 
   const getState = () => {
     if (configStates[ck]) return configStates[ck];
@@ -287,7 +294,7 @@ export default function DocumentChecklist() {
   );
 
   // ========== Preview panel (shared between side-by-side and mobile) ==========
-  const pdfFileName = `必要書類一覧_${meta.clientName || "未設定"}`;
+  const pdfFileName = `必要書類一覧_${party.clientName || "未設定"}`;
   const printPDF = () => {
     const el = document.getElementById("doc-checklist-preview");
     if (!el) return;
@@ -310,7 +317,7 @@ export default function DocumentChecklist() {
       <div style={{ width: "100%", aspectRatio: "210 / 297", position: "relative", background: "#e8ecf4", borderRadius: 4, overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.10)" }}>
         <div id="doc-checklist-preview" style={{ position: "absolute", inset: 0, overflow: "auto", padding: "32px 28px", background: "#fff", fontFamily: "'Noto Serif JP','Yu Mincho',serif", fontSize: 14, lineHeight: 1.8, color: "#222" }}>
           <div style={{ textAlign: "right", marginBottom: 14, fontSize: 12 }}>{dw}</div>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>{meta.clientName || "＿＿＿＿"} {meta.honorific}</div>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>{party.clientName || "＿＿＿＿"} {party.honorific}</div>
           <div style={{ textAlign: "right", marginBottom: 20, fontSize: 12, lineHeight: 1.7, color: "#444" }}>
             <div>{office.zip} {office.address}</div>
             <div style={{ fontWeight: 600, fontSize: 14, color: "#222" }}>{office.name}</div>
@@ -324,7 +331,7 @@ export default function DocumentChecklist() {
           <div style={{ marginBottom: 14 }}>
             {previewItems.map((item, idx) => {
               const num = FW[idx] || String(idx + 1), d = state.details[item.id] || {};
-              if (item.isAddressChange) return <div key={item.id} style={{ display: "flex", marginBottom: 4, fontSize: 13 }}><span style={{ fontWeight: 500, flexShrink: 0, minWidth: 26 }}>{num}．</span><div style={{ flex: 1 }}><div>住民票 または 戸籍の附票</div><div style={{ fontSize: 11, color: "#555", marginTop: 1, lineHeight: 1.5 }}>{meta.registryAddress ? `登記簿上の住所「${meta.registryAddress}」から現住所まで移転の経緯全てが記載されているもの` : "現住所が登記簿上の住所と異なる場合のみ、登記簿上の住所から現住所まで移転の経緯全てが記載されているもの"}</div><div style={{ fontSize: 11, color: "#555" }}>（別途、住所変更登記の費用が発生いたします。）</div></div></div>;
+              if (item.isAddressChange) return <div key={item.id} style={{ display: "flex", marginBottom: 4, fontSize: 13 }}><span style={{ fontWeight: 500, flexShrink: 0, minWidth: 26 }}>{num}．</span><div style={{ flex: 1 }}><div>住民票 または 戸籍の附票</div><div style={{ fontSize: 11, color: "#555", marginTop: 1, lineHeight: 1.5 }}>{party.registryAddress ? `登記簿上の住所「${party.registryAddress}」から現住所まで移転の経緯全てが記載されているもの` : "現住所が登記簿上の住所と異なる場合のみ、登記簿上の住所から現住所まで移転の経緯全てが記載されているもの"}</div><div style={{ fontSize: 11, color: "#555" }}>（別途、住所変更登記の費用が発生いたします。）</div></div></div>;
               if (item.isSeal) return <div key={item.id} style={{ display: "flex", marginBottom: 4, fontSize: 13 }}><span style={{ fontWeight: 500, flexShrink: 0, minWidth: 26 }}>{num}．</span><span>{item.text}</span></div>;
               if (item._rightsExpanded) {
                 return <div key={item.id} style={{ display: "flex", marginBottom: 4, fontSize: 13 }}><span style={{ fontWeight: 500, flexShrink: 0, minWidth: 26 }}>{num}．</span><span style={{ flex: 1 }}>{item._rightsName}{item._rightsInfo && <span style={{ fontSize: 11, color: "#666" }}>（{item._rightsInfo}）</span>}</span>{item._rightsCount && <span style={{ fontSize: 12, color: "#555", marginLeft: 6 }}>{item._rightsCount}</span>}</div>;
@@ -388,8 +395,8 @@ export default function DocumentChecklist() {
           </div>
           <div className="flex items-center gap-2 mb-2">
             <label className="text-xs font-medium w-16 shrink-0" style={{ color: "#566275" }}>宛名</label>
-            <input className="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f0f3f8", border: "1.5px solid #dce1ea" }} value={meta.clientName} onChange={e => setMeta(p => ({ ...p, clientName: e.target.value }))} placeholder="氏名・会社名" />
-            <select className="px-2 py-2 rounded-lg text-sm outline-none" style={{ background: "#f0f3f8", border: "1.5px solid #dce1ea" }} value={meta.honorific} onChange={e => setMeta(p => ({ ...p, honorific: e.target.value }))}><option value="様">様</option><option value="御中">御中</option></select>
+            <input className="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f0f3f8", border: "1.5px solid #dce1ea" }} value={party.clientName} onChange={e => setParty({ clientName: e.target.value })} placeholder="氏名・会社名" />
+            <select className="px-2 py-2 rounded-lg text-sm outline-none" style={{ background: "#f0f3f8", border: "1.5px solid #dce1ea" }} value={party.honorific} onChange={e => setParty({ honorific: e.target.value })}><option value="様">様</option><option value="御中">御中</option></select>
           </div>
           {meta.propertyDescs.map((pd, i) => <div key={i} className="flex items-center gap-2 mb-2">
             <label className="text-xs font-medium w-16 shrink-0" style={{ color: "#566275" }}>{i === 0 ? "物件" : ""}</label>
@@ -399,8 +406,9 @@ export default function DocumentChecklist() {
           </div>)}
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium w-16 shrink-0" style={{ color: "#566275" }}>登記住所</label>
-            <input className="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f0f3f8", border: "1.5px solid #dce1ea" }} value={meta.registryAddress} onChange={e => setMeta(p => ({ ...p, registryAddress: e.target.value }))} placeholder="住所変更がある場合" />
+            <input className="flex-1 px-3 py-2 rounded-lg text-sm outline-none" style={{ background: "#f0f3f8", border: "1.5px solid #dce1ea" }} value={party.registryAddress} onChange={e => setParty({ registryAddress: e.target.value })} placeholder="住所変更がある場合" />
           </div>
+          <div className="text-[10px] mt-2.5" style={{ color: "#8393a7" }}>※ 宛名・登記住所は売主／買主で別々に保存されます（物件・日付は共通）。</div>
         </div>
 
         {/* Items */}
