@@ -503,7 +503,7 @@ export default function App(){
                       <span className="text-sm flex-1 min-w-0 truncate" style={{color:"#3a4557"}}>{si.name}</span>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button onClick={()=>updateRow(idx,{count:Math.max(0,c-1)})} className="w-7 h-7 rounded-lg flex items-center justify-center text-base" style={{background:"#f0f3f8",color:c>0?"#3a4557":"#c5cdd8",border:"1px solid #dce1ea"}}>−</button>
-                        <span className="text-sm font-medium w-6 text-center" style={{fontVariantNumeric:"tabular-nums"}}>{c}</span>
+                        <input type="number" inputMode="numeric" min={0} value={c} onChange={e=>updateRow(idx,{count:e.target.value===""?0:Math.max(0,Math.floor(Number(e.target.value)||0))})} className="w-10 text-center text-sm font-medium rounded-lg outline-none" style={{background:"#f0f3f8",border:"1px solid #dce1ea",fontVariantNumeric:"tabular-nums",padding:"4px 2px"}} onFocus={e=>{e.target.style.borderColor="#4338ca"}} onBlur={e=>{e.target.style.borderColor="#dce1ea"}} />
                         <button onClick={()=>updateRow(idx,{count:c+1})} className="w-7 h-7 rounded-lg flex items-center justify-center text-base" style={{background:"#f0f3f8",color:"#3a4557",border:"1px solid #dce1ea"}}>+</button>
                         <span className="text-xs w-4 flex-shrink-0" style={{color:"#8393a7"}}>{si.unitLabel}</span>
                       </div>

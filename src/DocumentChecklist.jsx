@@ -68,12 +68,13 @@ function filterItems(base, mail, mailTexts) {
 function currentReiwa() { return new Date().getFullYear() - 2018; }
 function toWareki(y, m, d) { try { const dt = new Date(y, m - 1, d); return isNaN(dt) ? "" : dt.toLocaleDateString("ja-JP-u-ca-japanese", { era: "long", year: "numeric", month: "long", day: "numeric" }); } catch { return ""; } }
 
-function Combo({ value, options, onChange, w, suffix }) {
+function Combo({ value, onChange, w, suffix }) {
   return <div className="flex items-center gap-0.5">
-    <div className="relative" style={{ width: w }}>
-      <input type="number" className="w-full text-center text-sm rounded-lg outline-none" style={{ padding: "6px 4px", border: "1.5px solid #dce1ea", background: "#f0f3f8" }} value={value || ""} onChange={e => onChange(parseInt(e.target.value) || 0)} />
-      <select className="absolute inset-0 opacity-0 cursor-pointer" value={value || ""} onChange={e => onChange(parseInt(e.target.value))}>{options.map(o => <option key={o} value={o}>{o}</option>)}</select>
-    </div>
+    <input type="number" inputMode="numeric" min={0}
+      className="text-center text-sm rounded-lg outline-none"
+      style={{ width: w, padding: "6px 4px", border: "1.5px solid #dce1ea", background: "#f0f3f8" }}
+      value={value || ""} onChange={e => onChange(parseInt(e.target.value) || 0)}
+      onFocus={e => { e.target.style.borderColor = "#4338ca"; }} onBlur={e => { e.target.style.borderColor = "#dce1ea"; }} />
     {suffix && <span className="text-xs font-medium" style={{ color: "#566275" }}>{suffix}</span>}
   </div>;
 }
