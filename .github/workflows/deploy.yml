@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/youthful-noether-xcpdeu]
 
 permissions:
   contents: read
@@ -17,16 +17,46 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout production (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: prod
+      - name: Checkout test branch
+        uses: actions/checkout@v4
+        with:
+          ref: claude/youthful-noether-xcpdeu
+          path: test
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build
+
+      - name: Build production (root)
+        run: |
+          cd prod
+          npm ci
+          npm run build
+
+      - name: Build test (/test/) - non-blocking so prod always deploys
+        run: |
+          (cd test && npm ci && npm run build -- --base=/fee-calculator_public/test/) || echo "TEST BUILD FAILED - skipping /test/"
+
+      - name: Assemble site (prod at root, test under /test/)
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          cp -r prod/dist/. _site/
+          if [ -d test/dist ]; then
+            mkdir -p _site/test
+            cp -r test/dist/. _site/test/
+            echo "Included /test/ build"
+          else
+            echo "No test/dist - /test/ omitted this run"
+          fi
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
 
   deploy:
     needs: build
