@@ -370,11 +370,11 @@ function Card({item,index,onUpdate,onRemove,g,scTotal=0}){
         {item.causeType==="sale"?(
           <div className="p-3 rounded-lg mb-3" style={{background:"#eff6ff",border:"1px solid #bfdbfe"}}>
             <p className="text-xs font-bold mb-2" style={{color:"#1d4ed8"}}>土地・建物の評価額を分けて入力</p>
-            <Inp label="土地の評価額合計" value={item.landValue} onChange={v=>u({landValue:v})} suffix="円" placeholder="例: 10000000" />
-            <div className="flex items-center gap-2 -mt-2 mb-3">
-              <button onClick={()=>setShowShiki(true)} className="text-xs px-2.5 py-1 rounded-lg font-medium" style={{color:"#4338ca",background:"#eef2ff",border:"1px solid #c7d2fe"}}>🏢 土地・建物の内訳を入力（敷地権対応）</button>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <button onClick={()=>setShowShiki(true)} className="text-xs px-2.5 py-1.5 rounded-lg font-medium" style={{color:"#4338ca",background:"#eef2ff",border:"1px solid #c7d2fe"}}>🏢 土地・建物の内訳を入力（敷地権対応）</button>
               {(item.shiki?.lands?.some(p=>Number(p.price)>0)||item.shiki?.buildings?.some(p=>Number(p.val)>0))&&<span className="text-[10px]" style={{color:"#10b981"}}>✓ 内訳で計算済み</span>}
             </div>
+            <Inp label="土地の評価額合計" value={item.landValue} onChange={v=>u({landValue:v})} suffix="円" placeholder="例: 10000000" />
             <Inp label="建物の評価額合計" value={item.buildingValue} onChange={v=>u({buildingValue:v})} suffix="円" placeholder="例: 5000000" />
             {(item.landValue||item.buildingValue)&&<div className="text-xs mt-1 p-2 rounded" style={{background:"#dbeafe",color:"#1e40af"}}>報酬テーブル: 合計 {fmtM(Math.ceil(((item.landValue||0)+(item.buildingValue||0))/10000))}区分</div>}
           </div>
