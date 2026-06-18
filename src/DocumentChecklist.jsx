@@ -65,6 +65,8 @@ function filterItems(base, mail, mailTexts) {
   return f;
 }
 
+// テスト版(/test/)は本番と同一ドメインのため、保存キーを分けて本番設定を保護する
+const DOC_CFG_KEY = ((import.meta.env && import.meta.env.BASE_URL) || "").includes("/test/") ? "test-doc-checklist-config-v1" : "doc-checklist-config-v1";
 function currentReiwa() { return new Date().getFullYear() - 2018; }
 function toWareki(y, m, d) { try { const dt = new Date(y, m - 1, d); return isNaN(dt) ? "" : dt.toLocaleDateString("ja-JP-u-ca-japanese", { era: "long", year: "numeric", month: "long", day: "numeric" }); } catch { return ""; } }
 
@@ -108,7 +110,7 @@ export default function DocumentChecklist() {
   // 事務所情報・各種テンプレートを localStorage に保存（事務所ごとに一度入力すれば保持）
   useEffect(() => {
     try {
-      const r = localStorage.getItem("doc-checklist-config-v1");
+      const r = localStorage.getItem(DOC_CFG_KEY);
       if (r) {
         const d = JSON.parse(r);
         if (d.office) setOffice(o => ({ ...o, ...d.office }));
@@ -118,7 +120,7 @@ export default function DocumentChecklist() {
     } catch {}
   }, []);
   useEffect(() => {
-    try { localStorage.setItem("doc-checklist-config-v1", JSON.stringify({ office, extraItems, mailItems: mailItemsRaw })); } catch {}
+    try { localStorage.setItem(DOC_CFG_KEY, JSON.stringify({ office, extraItems, mailItems: mailItemsRaw })); } catch {}
   }, [office, extraItems, mailItemsRaw]);
 
   const dragRef = useRef({ from: null, to: null });
