@@ -271,7 +271,7 @@ function ShikiModal({initialLands,initialBuildings,onApply,onClose}){
   const NI=(value,onChange,ph,w)=>(<input type="number" inputMode="numeric" value={value} placeholder={ph} onChange={e=>onChange(e.target.value===""?"":Number(e.target.value))} className="px-2 py-1.5 rounded-lg text-sm outline-none text-right" style={{width:w,background:"#f0f3f8",border:"1.5px solid #dce1ea",fontVariantNumeric:"tabular-nums"}} />);
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.45)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div onClick={e=>e.stopPropagation()} className="rounded-2xl" style={{background:"#fff",width:"100%",maxWidth:580,maxHeight:"90vh",overflowY:"auto",padding:24,boxShadow:"0 12px 40px rgba(0,0,0,0.28)"}}>
+      <div onClick={e=>e.stopPropagation()} className="rounded-2xl" style={{background:"#fff",width:"100%",maxWidth:820,maxHeight:"92vh",overflowY:"auto",padding:28,boxShadow:"0 12px 40px rgba(0,0,0,0.28)"}}>
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-base font-bold" style={{color:"#1a2233"}}>土地・建物の内訳（敷地権対応）</h3>
           <button onClick={onClose} className="text-lg leading-none" style={{color:"#8393a7"}}>×</button>
@@ -287,9 +287,9 @@ function ShikiModal({initialLands,initialBuildings,onApply,onClose}){
             </div>
             <div className="mb-2"><label className="block text-xs mb-1" style={{color:"#566275"}}>評価額（敷地権は一筆の価格）</label>{NI(p.price,v=>upL(i,"price",v),"例: 156566896","100%")}</div>
             <div className="flex items-end gap-2 flex-wrap">
-              <div><label className="block text-xs mb-1" style={{color:"#566275"}}>持分 分子</label>{NI(p.num,v=>upL(i,"num",v),"任意",96)}</div>
+              <div><label className="block text-xs mb-1" style={{color:"#566275"}}>持分 分子</label>{NI(p.num,v=>upL(i,"num",v),"任意",120)}</div>
               <span className="pb-2 text-sm" style={{color:"#8393a7"}}>/</span>
-              <div><label className="block text-xs mb-1" style={{color:"#566275"}}>持分 分母</label>{NI(p.den,v=>upL(i,"den",v),"任意",96)}</div>
+              <div><label className="block text-xs mb-1" style={{color:"#566275"}}>持分 分母</label>{NI(p.den,v=>upL(i,"den",v),"任意",120)}</div>
               <div className="flex-1 text-right" style={{minWidth:110}}><div className="text-[10px]" style={{color:"#8393a7"}}>評価額</div><div className="text-sm font-bold" style={{color:"#1a2233",fontVariantNumeric:"tabular-nums"}}>{fmt(Math.floor(lv(p)))}</div></div>
             </div>
             <div className="text-[10px] mt-1.5" style={{color:"#8393a7"}}>※ 敷地権でない場合、持分は入力不要です（満額で計算）</div>
