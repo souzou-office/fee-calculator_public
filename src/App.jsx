@@ -344,7 +344,12 @@ function Card({item,index,onUpdate,onRemove,g,scTotal=0}){
     const bldRows=blds.map((p,i)=>`<tr><td>建物${i+1}</td><td class=r>${yen(Number(p.val)||0)}</td></tr>`).join("");
     const landTable=lands.length?(hasMochi?`<table><thead><tr><th>区分</th><th>評価額</th><th>持分(分子/分母)</th><th>計算後評価額</th></tr></thead><tbody>${landRows}</tbody></table>`:`<table><thead><tr><th>区分</th><th>評価額</th></tr></thead><tbody>${landRows}</tbody></table>`):"";
     const bldTable=blds.length?`<table><thead><tr><th>区分</th><th>評価額</th></tr></thead><tbody>${bldRows}</tbody></table>`:"";
-    const html=`<!doctype html><html lang=ja><head><meta charset=utf-8><title>登録免許税計算シート</title><style>*{box-sizing:border-box}body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;color:#1a2233;margin:28px;font-size:13px}h1{font-size:17px;text-align:center;letter-spacing:.18em;margin:0 0 4px}.date{text-align:right;color:#555;font-size:12px;margin-bottom:14px}h2{font-size:13px;background:#eef2ff;padding:5px 9px;border-left:4px solid #4338ca;margin:16px 0 6px}table{width:100%;border-collapse:collapse;margin-bottom:6px}td,th{border:1px solid #d7dbe3;padding:5px 8px}th{background:#f4f6fb;font-weight:600;font-size:12px}.r{text-align:right;font-variant-numeric:tabular-nums}.c{text-align:center}.sum{display:flex;justify-content:space-between;padding:3px 9px}.sum b{font-variant-numeric:tabular-nums}.tot{margin-top:10px;padding:9px 12px;border:2px solid #4338ca;border-radius:6px;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#4338ca}.note{color:#888;font-size:11px;margin-top:8px}@media print{body{margin:14mm}}</style></head><body><h1>登録免許税計算シート</h1><h2>土地${hasMochi?"（敷地権）":""}</h2>${landTable}<div class=sum><span>評価額合計</span><b>${yen(lraw)}</b></div><div class=sum><span>課税標準①（千円未満切捨）</span><b>${lb.toLocaleString()}</b></div><div class=sum><span>土地の登録免許税　①×${lr*1000}/1000　②</span><b>${yen(lt)}</b></div><h2>建物</h2>${bldTable}<div class=sum><span>評価額合計</span><b>${yen(braw)}</b></div><div class=sum><span>課税標準③（千円未満切捨）</span><b>${bb.toLocaleString()}</b></div><div class=sum><span>建物の登録免許税　③×${br*1000}/1000　④</span><b>${yen(bt)}</b></div><div class=tot><span>登録免許税合計（②＋④・百円未満切捨）</span><span>${yen(total)}</span></div><script>window.onload=function(){setTimeout(function(){window.print()},250)}</script></body></html>`;
+    const isSale=item.causeType==="sale";
+    const cause=item.causeType==="inheritance"?"相続":item.causeType==="gift"?"贈与・財産分与等":"売買";
+    const combined=lraw+braw,cbase=f1(combined),rate=lr;
+    const saleBody=`<h2>土地${hasMochi?"（敷地権）":""}</h2>${landTable}<div class=sum><span>評価額合計</span><b>${yen(lraw)}</b></div><div class=sum><span>課税標準①（千円未満切捨）</span><b>${lb.toLocaleString()}</b></div><div class=sum><span>土地の登録免許税　①×${lr*1000}/1000　②</span><b>${yen(lt)}</b></div><h2>建物</h2>${bldTable}<div class=sum><span>評価額合計</span><b>${yen(braw)}</b></div><div class=sum><span>課税標準③（千円未満切捨）</span><b>${bb.toLocaleString()}</b></div><div class=sum><span>建物の登録免許税　③×${br*1000}/1000　④</span><b>${yen(bt)}</b></div><div class=tot><span>登録免許税合計（②＋④・百円未満切捨）</span><span>${yen(total)}</span></div>`;
+    const combBody=`<h2>土地${hasMochi?"（敷地権）":""}</h2>${landTable}<div class=sum><span>土地 評価額合計</span><b>${yen(lraw)}</b></div><h2>建物</h2>${bldTable}<div class=sum><span>建物 評価額合計</span><b>${yen(braw)}</b></div><div class=sum><span>評価額合計（土地＋建物）</span><b>${yen(combined)}</b></div><div class=sum><span>課税標準（千円未満切捨）</span><b>${cbase.toLocaleString()}</b></div><div class=tot><span>登録免許税（課税標準×${rate*1000}/1000・百円未満切捨）</span><span>${yen(total)}</span></div>`;
+    const html=`<!doctype html><html lang=ja><head><meta charset=utf-8><title>登録免許税計算シート</title><style>*{box-sizing:border-box}body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;color:#1a2233;margin:28px;font-size:13px}h1{font-size:17px;text-align:center;letter-spacing:.18em;margin:0 0 2px}.cause{text-align:center;color:#555;font-size:12px;margin-bottom:14px}h2{font-size:13px;background:#eef2ff;padding:5px 9px;border-left:4px solid #4338ca;margin:16px 0 6px}table{width:100%;border-collapse:collapse;margin-bottom:6px}td,th{border:1px solid #d7dbe3;padding:5px 8px}th{background:#f4f6fb;font-weight:600;font-size:12px}.r{text-align:right;font-variant-numeric:tabular-nums}.c{text-align:center}.sum{display:flex;justify-content:space-between;padding:3px 9px}.sum b{font-variant-numeric:tabular-nums}.tot{margin-top:10px;padding:9px 12px;border:2px solid #4338ca;border-radius:6px;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#4338ca}@media print{body{margin:14mm}}</style></head><body><h1>登録免許税計算シート</h1><div class=cause>原因：${cause}</div>${isSale?saleBody:combBody}<script>window.onload=function(){setTimeout(function(){window.print()},250)}</script></body></html>`;
     const w=window.open("","_blank","width=820,height=900");
     if(!w){alert("印刷ウィンドウを開けませんでした。ブラウザのポップアップ許可をご確認ください。");return;}
     w.document.write(html);w.document.close();
@@ -367,20 +372,16 @@ function Card({item,index,onUpdate,onRemove,g,scTotal=0}){
         <Sel label="原因" value={item.causeType} onChange={v=>u({causeType:v})} options={[
           {value:"sale",label:"売買"},{value:"inheritance",label:"相続（4/1000）"},{value:"gift",label:"贈与・財産分与等（20/1000）"},
         ]} />
-        {item.causeType==="sale"?(
-          <div className="p-3 rounded-lg mb-3" style={{background:"#eff6ff",border:"1px solid #bfdbfe"}}>
-            <p className="text-xs font-bold mb-2" style={{color:"#1d4ed8"}}>土地・建物の評価額を分けて入力</p>
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <button onClick={()=>setShowShiki(true)} className="text-xs px-2.5 py-1.5 rounded-lg font-medium" style={{color:"#4338ca",background:"#eef2ff",border:"1px solid #c7d2fe"}}>🏢 土地・建物の内訳を入力（敷地権対応）</button>
-              {(item.shiki?.lands?.some(p=>Number(p.price)>0)||item.shiki?.buildings?.some(p=>Number(p.val)>0))&&<span className="text-[10px]" style={{color:"#10b981"}}>✓ 内訳で計算済み</span>}
-            </div>
-            <Inp label="土地の評価額合計" value={item.landValue} onChange={v=>u({landValue:v})} suffix="円" placeholder="例: 10000000" />
-            <Inp label="建物の評価額合計" value={item.buildingValue} onChange={v=>u({buildingValue:v})} suffix="円" placeholder="例: 5000000" />
-            {(item.landValue||item.buildingValue)&&<div className="text-xs mt-1 p-2 rounded" style={{background:"#dbeafe",color:"#1e40af"}}>報酬テーブル: 合計 {fmtM(Math.ceil(((item.landValue||0)+(item.buildingValue||0))/10000))}区分</div>}
+        <div className="p-3 rounded-lg mb-3" style={{background:"#eff6ff",border:"1px solid #bfdbfe"}}>
+          <p className="text-xs font-bold mb-2" style={{color:"#1d4ed8"}}>土地・建物の評価額を分けて入力</p>
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <button onClick={()=>setShowShiki(true)} className="text-xs px-2.5 py-1.5 rounded-lg font-medium" style={{color:"#4338ca",background:"#eef2ff",border:"1px solid #c7d2fe"}}>🏢 土地・建物の内訳を入力（敷地権対応）</button>
+            {(item.shiki?.lands?.some(p=>Number(p.price)>0)||item.shiki?.buildings?.some(p=>Number(p.val)>0))&&<span className="text-[10px]" style={{color:"#10b981"}}>✓ 内訳で計算済み</span>}
           </div>
-        ):(<div className="p-3 rounded-lg mb-3" style={{background:"#f0fdf4",border:"1px solid #bbf7d0"}}>
-            <Inp label="課税標準額（評価額合計）" value={item.landValue} onChange={v=>u({landValue:v,buildingValue:0})} suffix="円" />
-          </div>)}
+          <Inp label="土地の評価額合計" value={item.landValue} onChange={v=>u({landValue:v})} suffix="円" placeholder="例: 10000000" />
+          <Inp label="建物の評価額合計" value={item.buildingValue} onChange={v=>u({buildingValue:v})} suffix="円" placeholder="例: 5000000" />
+          {(item.landValue||item.buildingValue)&&<div className="text-xs mt-1 p-2 rounded" style={{background:"#dbeafe",color:"#1e40af"}}>報酬テーブル: 合計 {fmtM(Math.ceil(((item.landValue||0)+(item.buildingValue||0))/10000))}区分</div>}
+        </div>
       </>}
       {item.type==="preservation"&&<Inp label="課税標準額（固定資産評価額）" value={item.taxableValue} onChange={v=>u({taxableValue:v})} suffix="円"
         note={item.taxableValue?`→ ${fmtM(Math.ceil(item.taxableValue/10000))}区分`:""} />}
@@ -410,7 +411,7 @@ function Card({item,index,onUpdate,onRemove,g,scTotal=0}){
                 <span className="text-xs" style={{color:"#78350f",fontVariantNumeric:"tabular-nums"}}>{s.v}</span>
               </div>
             ))}
-            {item.type==="transfer"&&item.causeType==="sale"&&(
+            {item.type==="transfer"&&(
               <button onClick={printSheet} className="text-xs mt-2 px-2.5 py-1 rounded-lg font-medium" style={{color:"#4338ca",background:"#fff",border:"1px solid #c7d2fe"}}>🖨 登録免許税計算シートを印刷</button>
             )}
           </div>
