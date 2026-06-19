@@ -80,8 +80,24 @@ function calcTaxDetail(type,it,hc){
         {l:"税額（百円未満切捨）",v:`${sumRaw.toLocaleString()} → ${total.toLocaleString()}`},
       ],lt:ltRaw,bt:btRaw,lr,br};
     }
+    if(it.causeType==="inheritance"){
+      // 相続：1筆の価額が100万円以下の土地は非課税（措置法84条の2の3②）。建物は対象外
+      const r=4/1000;
+      const pval=p=>{const pr=Number(p.price)||0,n=Number(p.num)||0,d=Number(p.den)||0;return (n>0&&d>0)?Math.floor(pr/d*n):pr;};
+      const ls=it.shiki&&it.shiki.lands;
+      let taxLand=0,exemptSum=0,exemptN=0;
+      if(ls&&ls.length){ls.forEach(p=>{const v=pval(p);if(v<=0)return;if(v<=1000000){exemptSum+=v;exemptN++;}else taxLand+=v;});}
+      else{const lvAll=it.landValue||0;if(lvAll>0&&lvAll<=1000000){exemptSum=lvAll;exemptN=1;}else taxLand=lvAll;}
+      const bld=it.buildingValue||0,raw=taxLand+bld;
+      const base=raw>0?f1(raw):0,taxRaw=base*r,tax=raw>0?f2(taxRaw):0;
+      return{total:tax,steps:[
+        ...(exemptN>0?[{l:"非課税（100万円以下の土地）",v:`${exemptN}件 計${exemptSum.toLocaleString()}円 → 課税対象外（措置法84条の2の3②）`}]:[]),
+        {l:"課税標準",v:`${raw.toLocaleString()} → ${base.toLocaleString()}（千円未満切捨）`},
+        {l:"税額",v:`${base.toLocaleString()} × 4/1000 = ${taxRaw.toLocaleString()} → ${tax.toLocaleString()}（百円未満切捨）`},
+      ],lt:0,bt:0,lr:r,br:r,exemptSum,exemptN,taxLand};
+    }
     const raw=(it.landValue||0)+(it.buildingValue||0);
-    const r=it.causeType==="inheritance"?4/1000:20/1000;
+    const r=20/1000;
     const base=f1(raw),taxRaw=base*r,tax=f2(taxRaw);
     return{total:tax,steps:[
       {l:"課税標準",v:`${raw.toLocaleString()} → ${base.toLocaleString()}（千円未満切捨）`},
