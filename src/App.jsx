@@ -259,24 +259,26 @@ function Settings({ft,setFt,unit,setUnit,surcharges,setSurcharges,stdItems,setSt
     </div>);
 }
 
-// 土地・建物の内訳（敷地権対応）モーダル：複数の土地（持分は任意）と建物を入力し合計を転記
+// 土地・建物の内訳モーダル：敷地権持分と移転持分を別々に持ち、物件ごとに設定（空欄＝満額）
 function ShikiModal({initialLands,initialBuildings,onApply,onClose}){
-  const[lands,setLands]=useState(initialLands&&initialLands.length?initialLands.map(p=>({...p})):[{price:"",num:"",den:""}]);
-  const[bldgs,setBldgs]=useState(initialBuildings&&initialBuildings.length?initialBuildings.map(p=>({...p})):[{val:""}]);
+  const[lands,setLands]=useState(initialLands&&initialLands.length?initialLands.map(p=>({...p})):[{price:"",num:"",den:"",mnum:"",mden:""}]);
+  const[bldgs,setBldgs]=useState(initialBuildings&&initialBuildings.length?initialBuildings.map(p=>({...p})):[{val:"",mnum:"",mden:""}]);
   const upL=(i,k,v)=>setLands(a=>a.map((p,j)=>j===i?{...p,[k]:v}:p));
-  const upB=(i,v)=>setBldgs(a=>a.map((p,j)=>j===i?{...p,val:v}:p));
-  const lv=p=>{const pr=Number(p.price)||0,n=Number(p.num)||0,d=Number(p.den)||0;return (n>0&&d>0)?pr/d*n:pr;};
+  const upB=(i,k,v)=>setBldgs(a=>a.map((p,j)=>j===i?{...p,[k]:v}:p));
+  const lv=p=>{const pr=Number(p.price)||0,n=Number(p.num)||0,d=Number(p.den)||0,mn=Number(p.mnum)||0,md=Number(p.mden)||0;let v=(n>0&&d>0)?pr/d*n:pr;if(mn>0&&md>0)v=v*mn/md;return v;};
+  const bv=p=>{const v=Number(p.val)||0,mn=Number(p.mnum)||0,md=Number(p.mden)||0;return (mn>0&&md>0)?v*mn/md:v;};
   const landSum=Math.floor(lands.reduce((s,p)=>s+lv(p),0));
-  const bldgSum=Math.floor(bldgs.reduce((s,p)=>s+(Number(p.val)||0),0));
+  const bldgSum=Math.floor(bldgs.reduce((s,p)=>s+bv(p),0));
   const NI=(value,onChange,ph,w)=>(<input type="number" inputMode="numeric" value={value} placeholder={ph} onChange={e=>onChange(e.target.value===""?"":Number(e.target.value))} className="px-2 py-1.5 rounded-lg text-sm outline-none text-right" style={{width:w,background:"#f0f3f8",border:"1.5px solid #dce1ea",fontVariantNumeric:"tabular-nums"}} />);
+  const Frac=(label,n,d,onN,onD,color)=>(<div><label className="block text-[10px] mb-1" style={{color}}>{label}</label><div className="flex items-center gap-1">{NI(n,onN,"分子",70)}<span style={{color:"#8393a7"}}>/</span>{NI(d,onD,"分母",70)}</div></div>);
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.45)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div onClick={e=>e.stopPropagation()} className="rounded-2xl" style={{background:"#fff",width:"100%",maxWidth:820,maxHeight:"92vh",overflowY:"auto",padding:28,boxShadow:"0 12px 40px rgba(0,0,0,0.28)"}}>
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-base font-bold" style={{color:"#1a2233"}}>土地・建物の内訳（敷地権対応）</h3>
+          <h3 className="text-base font-bold" style={{color:"#1a2233"}}>土地・建物の内訳</h3>
           <button onClick={onClose} className="text-lg leading-none" style={{color:"#8393a7"}}>×</button>
         </div>
-        <p className="text-xs mb-4" style={{color:"#8393a7"}}>土地・建物は複数入力できます。合計を各「評価額合計」へ転記します。<b style={{color:"#566275"}}>持分は敷地権のときだけ入力</b>（空欄なら満額）。</p>
+        <p className="text-xs mb-4" style={{color:"#8393a7",lineHeight:1.7}}>複数入力できます。合計を各「評価額合計」へ転記。<b style={{color:"#1d4ed8"}}>敷地権持分</b>＝区分建物の敷地按分／<b style={{color:"#7c3aed"}}>移転持分</b>＝取得する共有持分。<b style={{color:"#566275"}}>どちらも空欄なら満額（全部）</b>。</p>
 
         <div className="text-xs font-bold mb-2" style={{color:"#1d4ed8"}}>土地</div>
         {lands.map((p,i)=>(
@@ -286,16 +288,14 @@ function ShikiModal({initialLands,initialBuildings,onApply,onClose}){
               {lands.length>1&&<button onClick={()=>setLands(a=>a.filter((_,j)=>j!==i))} className="text-xs" style={{color:"#e53e3e"}}>削除</button>}
             </div>
             <div className="mb-2"><label className="block text-xs mb-1" style={{color:"#566275"}}>評価額（敷地権は一筆の価格）</label>{NI(p.price,v=>upL(i,"price",v),"例: 156566896","100%")}</div>
-            <div className="flex items-end gap-2 flex-wrap">
-              <div><label className="block text-xs mb-1" style={{color:"#566275"}}>持分 分子</label>{NI(p.num,v=>upL(i,"num",v),"任意",120)}</div>
-              <span className="pb-2 text-sm" style={{color:"#8393a7"}}>/</span>
-              <div><label className="block text-xs mb-1" style={{color:"#566275"}}>持分 分母</label>{NI(p.den,v=>upL(i,"den",v),"任意",120)}</div>
-              <div className="flex-1 text-right" style={{minWidth:110}}><div className="text-[10px]" style={{color:"#8393a7"}}>評価額</div><div className="text-sm font-bold" style={{color:"#1a2233",fontVariantNumeric:"tabular-nums"}}>{fmt(Math.floor(lv(p)))}</div></div>
+            <div className="flex items-end gap-3 flex-wrap">
+              {Frac("敷地権持分（任意）",p.num,p.den,v=>upL(i,"num",v),v=>upL(i,"den",v),"#1d4ed8")}
+              {Frac("移転持分（任意）",p.mnum,p.mden,v=>upL(i,"mnum",v),v=>upL(i,"mden",v),"#7c3aed")}
+              <div className="flex-1 text-right" style={{minWidth:110}}><div className="text-[10px]" style={{color:"#8393a7"}}>登記評価額</div><div className="text-sm font-bold" style={{color:"#1a2233",fontVariantNumeric:"tabular-nums"}}>{fmt(Math.floor(lv(p)))}</div></div>
             </div>
-            <div className="text-[10px] mt-1.5" style={{color:"#8393a7"}}>※ 敷地権でない場合、持分は入力不要です（満額で計算）</div>
           </div>
         ))}
-        <button onClick={()=>setLands(a=>[...a,{price:"",num:"",den:""}])} className="text-xs py-2 px-3 rounded-lg font-medium mb-4" style={{color:"#1d4ed8",background:"#eff6ff",border:"1.5px dashed #bfdbfe"}}>＋ 土地を追加</button>
+        <button onClick={()=>setLands(a=>[...a,{price:"",num:"",den:"",mnum:"",mden:""}])} className="text-xs py-2 px-3 rounded-lg font-medium mb-4" style={{color:"#1d4ed8",background:"#eff6ff",border:"1.5px dashed #bfdbfe"}}>＋ 土地を追加</button>
 
         <div className="text-xs font-bold mb-2" style={{color:"#b45309"}}>建物</div>
         {bldgs.map((p,i)=>(
@@ -304,10 +304,14 @@ function ShikiModal({initialLands,initialBuildings,onApply,onClose}){
               <span className="text-xs font-bold" style={{color:"#b45309"}}>建物 {i+1}</span>
               {bldgs.length>1&&<button onClick={()=>setBldgs(a=>a.filter((_,j)=>j!==i))} className="text-xs" style={{color:"#e53e3e"}}>削除</button>}
             </div>
-            <div><label className="block text-xs mb-1" style={{color:"#566275"}}>評価額</label>{NI(p.val,v=>upB(i,v),"例: 5081032","100%")}</div>
+            <div className="mb-2"><label className="block text-xs mb-1" style={{color:"#566275"}}>評価額</label>{NI(p.val,v=>upB(i,"val",v),"例: 5081032","100%")}</div>
+            <div className="flex items-end gap-3 flex-wrap">
+              {Frac("移転持分（任意）",p.mnum,p.mden,v=>upB(i,"mnum",v),v=>upB(i,"mden",v),"#7c3aed")}
+              <div className="flex-1 text-right" style={{minWidth:110}}><div className="text-[10px]" style={{color:"#8393a7"}}>登記評価額</div><div className="text-sm font-bold" style={{color:"#1a2233",fontVariantNumeric:"tabular-nums"}}>{fmt(Math.floor(bv(p)))}</div></div>
+            </div>
           </div>
         ))}
-        <button onClick={()=>setBldgs(a=>[...a,{val:""}])} className="text-xs py-2 px-3 rounded-lg font-medium mb-4" style={{color:"#b45309",background:"#fffbeb",border:"1.5px dashed #fde68a"}}>＋ 建物を追加</button>
+        <button onClick={()=>setBldgs(a=>[...a,{val:"",mnum:"",mden:""}])} className="text-xs py-2 px-3 rounded-lg font-medium mb-4" style={{color:"#b45309",background:"#fffbeb",border:"1.5px dashed #fde68a"}}>＋ 建物を追加</button>
 
         <div className="rounded-xl p-3 mb-4" style={{background:"#eef2ff"}}>
           <div className="flex justify-between text-sm mb-1"><span style={{color:"#566275"}}>土地 評価額合計</span><span className="font-bold" style={{color:"#1d4ed8",fontVariantNumeric:"tabular-nums"}}>{fmt(landSum)}</span></div>
@@ -337,21 +341,25 @@ function Card({item,index,onUpdate,onRemove,g,scTotal=0}){
     const lt=r.txd.lt||0,bt=r.txd.bt||0,total=r.tax;
     const lands=(item.shiki?.lands||[]).filter(p=>Number(p.price)>0);
     const blds=(item.shiki?.buildings||[]).filter(p=>Number(p.val)>0);
-    const pv=p=>{const pr=Number(p.price)||0,n=Number(p.num)||0,d=Number(p.den)||0;return (n>0&&d>0)?pr/d*n:pr;};
     const yen=n=>"¥"+Math.round(n).toLocaleString();
+    const lvv=p=>{const pr=Number(p.price)||0,n=Number(p.num)||0,d=Number(p.den)||0,mn=Number(p.mnum)||0,md=Number(p.mden)||0;let v=(n>0&&d>0)?pr/d*n:pr;if(mn>0&&md>0)v=v*mn/md;return Math.floor(v);};
+    const bvv=p=>{const v=Number(p.val)||0,mn=Number(p.mnum)||0,md=Number(p.mden)||0;return Math.floor((mn>0&&md>0)?v*mn/md:v);};
+    const shareTxt=p=>{const a=[];if(Number(p.num)>0&&Number(p.den)>0)a.push(`敷地権 ${Number(p.num)}/${Number(p.den)}`);if(Number(p.mnum)>0&&Number(p.mden)>0)a.push(`移転 ${Number(p.mnum)}/${Number(p.mden)}`);return a.length?a.join("　"):"—";};
     const hasMochi=lands.some(p=>Number(p.num)>0&&Number(p.den)>0);
-    const landRows=lands.map((p,i)=>{const mc=(Number(p.num)>0&&Number(p.den)>0)?`${Number(p.num)} / ${Number(p.den)}`:"—";return hasMochi?`<tr><td>土地${i+1}</td><td class=r>${(Number(p.price)||0).toLocaleString()}</td><td class=c>${mc}</td><td class=r>${yen(pv(p))}</td></tr>`:`<tr><td>土地${i+1}</td><td class=r>${yen(Number(p.price)||0)}</td></tr>`;}).join("");
-    const bldRows=blds.map((p,i)=>`<tr><td>建物${i+1}</td><td class=r>${yen(Number(p.val)||0)}</td></tr>`).join("");
-    const landTable=lands.length?(hasMochi?`<table><thead><tr><th>区分</th><th>評価額</th><th>持分(分子/分母)</th><th>計算後評価額</th></tr></thead><tbody>${landRows}</tbody></table>`:`<table><thead><tr><th>区分</th><th>評価額</th></tr></thead><tbody>${landRows}</tbody></table>`):"";
-    const bldTable=blds.length?`<table><thead><tr><th>区分</th><th>評価額</th></tr></thead><tbody>${bldRows}</tbody></table>`:"";
+    const hasLShare=lands.some(p=>(Number(p.num)>0&&Number(p.den)>0)||(Number(p.mnum)>0&&Number(p.mden)>0));
+    const hasBShare=blds.some(p=>Number(p.mnum)>0&&Number(p.mden)>0);
+    const landRows=lands.map((p,i)=>hasLShare?`<tr><td>土地${i+1}</td><td class=r>${(Number(p.price)||0).toLocaleString()}</td><td class=c>${shareTxt(p)}</td><td class=r>${yen(lvv(p))}</td></tr>`:`<tr><td>土地${i+1}</td><td class=r>${yen(Number(p.price)||0)}</td></tr>`).join("");
+    const bldRows=blds.map((p,i)=>hasBShare?`<tr><td>建物${i+1}</td><td class=r>${(Number(p.val)||0).toLocaleString()}</td><td class=c>${shareTxt(p)}</td><td class=r>${yen(bvv(p))}</td></tr>`:`<tr><td>建物${i+1}</td><td class=r>${yen(Number(p.val)||0)}</td></tr>`).join("");
+    const landTable=lands.length?(hasLShare?`<table><thead><tr><th>区分</th><th>評価額</th><th>持分</th><th>登記評価額</th></tr></thead><tbody>${landRows}</tbody></table>`:`<table><thead><tr><th>区分</th><th>評価額</th></tr></thead><tbody>${landRows}</tbody></table>`):"";
+    const bldTable=blds.length?(hasBShare?`<table><thead><tr><th>区分</th><th>評価額</th><th>持分</th><th>登記評価額</th></tr></thead><tbody>${bldRows}</tbody></table>`:`<table><thead><tr><th>区分</th><th>評価額</th></tr></thead><tbody>${bldRows}</tbody></table>`):"";
     const isSale=item.causeType==="sale";
     const cause=item.causeType==="inheritance"?"相続":item.causeType==="gift"?"贈与・財産分与等":"売買";
     const combined=lraw+braw,cbase=f1(combined),rate=lr;
     const saleBody=`<h2>土地${hasMochi?"（敷地権）":""}</h2>${landTable}<div class=sum><span>評価額合計</span><b>${yen(lraw)}</b></div><div class=sum><span>課税標準①（千円未満切捨）</span><b>${lb.toLocaleString()}</b></div><div class=sum><span>土地の登録免許税　①×${lr*1000}/1000　②</span><b>${yen(lt)}</b></div><h2>建物</h2>${bldTable}<div class=sum><span>評価額合計</span><b>${yen(braw)}</b></div><div class=sum><span>課税標準③（千円未満切捨）</span><b>${bb.toLocaleString()}</b></div><div class=sum><span>建物の登録免許税　③×${br*1000}/1000　④</span><b>${yen(bt)}</b></div><div class=tot><span>登録免許税合計（②＋④・百円未満切捨）</span><span>${yen(total)}</span></div>`;
     const combBody=`<h2>土地${hasMochi?"（敷地権）":""}</h2>${landTable}<div class=sum><span>土地 評価額合計</span><b>${yen(lraw)}</b></div><h2>建物</h2>${bldTable}<div class=sum><span>建物 評価額合計</span><b>${yen(braw)}</b></div><div class=sum><span>評価額合計（土地＋建物）</span><b>${yen(combined)}</b></div><div class=sum><span>課税標準（千円未満切捨）</span><b>${cbase.toLocaleString()}</b></div><div class=tot><span>登録免許税（課税標準×${rate*1000}/1000・百円未満切捨）</span><span>${yen(total)}</span></div>`;
     const exemptSum=r.txd.exemptSum||0,taxLand=(r.txd.taxLand!=null?r.txd.taxLand:lraw),cbaseInh=(taxLand+braw)>0?f1(taxLand+braw):0;
-    const landRowsInh=lands.map((p,i)=>{const v=Math.floor(pv(p));const ex=v<=1000000;const mc=(Number(p.num)>0&&Number(p.den)>0)?`${Number(p.num)} / ${Number(p.den)}`:"—";return hasMochi?`<tr><td>土地${i+1}</td><td class=r>${(Number(p.price)||0).toLocaleString()}</td><td class=c>${mc}</td><td class=r>${yen(v)}</td><td class=c>${ex?"非課税":"課税"}</td></tr>`:`<tr><td>土地${i+1}</td><td class=r>${yen(v)}</td><td class=c>${ex?"非課税":"課税"}</td></tr>`;}).join("");
-    const landTableInh=lands.length?(hasMochi?`<table><thead><tr><th>区分</th><th>評価額</th><th>持分(分子/分母)</th><th>計算後評価額</th><th>判定</th></tr></thead><tbody>${landRowsInh}</tbody></table>`:`<table><thead><tr><th>区分</th><th>評価額</th><th>判定</th></tr></thead><tbody>${landRowsInh}</tbody></table>`):"";
+    const landRowsInh=lands.map((p,i)=>{const v=lvv(p);const ex=v<=1000000;return hasLShare?`<tr><td>土地${i+1}</td><td class=r>${(Number(p.price)||0).toLocaleString()}</td><td class=c>${shareTxt(p)}</td><td class=r>${yen(v)}</td><td class=c>${ex?"非課税":"課税"}</td></tr>`:`<tr><td>土地${i+1}</td><td class=r>${yen(v)}</td><td class=c>${ex?"非課税":"課税"}</td></tr>`;}).join("");
+    const landTableInh=lands.length?(hasLShare?`<table><thead><tr><th>区分</th><th>評価額</th><th>持分</th><th>登記評価額</th><th>判定</th></tr></thead><tbody>${landRowsInh}</tbody></table>`:`<table><thead><tr><th>区分</th><th>評価額</th><th>判定</th></tr></thead><tbody>${landRowsInh}</tbody></table>`):"";
     const inhBody=`<h2>土地${hasMochi?"（敷地権）":""}</h2>${landTableInh}<div class=sum><span>土地 評価額合計</span><b>${yen(lraw)}</b></div>${exemptSum>0?`<div class=sum><span>うち非課税（100万円以下の土地）</span><b>−${yen(exemptSum)}</b></div>`:""}<div class=sum><span>課税対象 土地</span><b>${yen(taxLand)}</b></div><h2>建物</h2>${bldTable}<div class=sum><span>建物 評価額合計</span><b>${yen(braw)}</b></div><div class=sum><span>課税標準（課税対象土地＋建物・千円未満切捨）</span><b>${cbaseInh.toLocaleString()}</b></div><div class=tot><span>登録免許税（課税標準×4/1000・百円未満切捨）</span><span>${yen(total)}</span></div>${exemptSum>0?`<div style="color:#888;font-size:11px;margin-top:6px">※ 100万円以下の土地は非課税（租税特別措置法84条の2の3第2項）</div>`:""}`;
     const html=`<!doctype html><html lang=ja><head><meta charset=utf-8><title>登録免許税計算シート</title><style>*{box-sizing:border-box}body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;color:#1a2233;margin:28px;font-size:13px}h1{font-size:17px;text-align:center;letter-spacing:.18em;margin:0 0 2px}.cause{text-align:center;color:#555;font-size:12px;margin-bottom:14px}h2{font-size:13px;background:#eef2ff;padding:5px 9px;border-left:4px solid #4338ca;margin:16px 0 6px}table{width:100%;border-collapse:collapse;margin-bottom:6px}td,th{border:1px solid #d7dbe3;padding:5px 8px}th{background:#f4f6fb;font-weight:600;font-size:12px}.r{text-align:right;font-variant-numeric:tabular-nums}.c{text-align:center}.sum{display:flex;justify-content:space-between;padding:3px 9px}.sum b{font-variant-numeric:tabular-nums}.tot{margin-top:10px;padding:9px 12px;border:2px solid #4338ca;border-radius:6px;display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#4338ca}@media print{body{margin:14mm}}</style></head><body><h1>登録免許税計算シート</h1><div class=cause>原因：${cause}</div>${isSale?saleBody:(item.causeType==="inheritance"?inhBody:combBody)}<script>window.onload=function(){setTimeout(function(){window.print()},250)}</script></body></html>`;
     const w=window.open("","_blank","width=820,height=900");

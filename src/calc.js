@@ -83,7 +83,7 @@ function calcTaxDetail(type,it,hc){
     if(it.causeType==="inheritance"){
       // 相続：1筆の価額が100万円以下の土地は非課税（措置法84条の2の3②）。建物は対象外
       const r=4/1000;
-      const pval=p=>{const pr=Number(p.price)||0,n=Number(p.num)||0,d=Number(p.den)||0;return (n>0&&d>0)?Math.floor(pr/d*n):pr;};
+      const pval=p=>{const pr=Number(p.price)||0,n=Number(p.num)||0,d=Number(p.den)||0,mn=Number(p.mnum)||0,md=Number(p.mden)||0;let v=(n>0&&d>0)?pr/d*n:pr;if(mn>0&&md>0)v=v*mn/md;return Math.floor(v);};
       const ls=it.shiki&&it.shiki.lands;
       let taxLand=0,exemptSum=0,exemptN=0;
       if(ls&&ls.length){ls.forEach(p=>{const v=pval(p);if(v<=0)return;if(v<=1000000){exemptSum+=v;exemptN++;}else taxLand+=v;});}
