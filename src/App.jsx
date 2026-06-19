@@ -263,6 +263,8 @@ function Settings({ft,setFt,unit,setUnit,surcharges,setSurcharges,stdItems,setSt
 function ShikiModal({initialLands,initialBuildings,onApply,onClose}){
   const[lands,setLands]=useState(initialLands&&initialLands.length?initialLands.map(p=>({...p})):[{price:"",num:"",den:"",mnum:"",mden:""}]);
   const[bldgs,setBldgs]=useState(initialBuildings&&initialBuildings.length?initialBuildings.map(p=>({...p})):[{val:"",mnum:"",mden:""}]);
+  const[useShare,setUseShare]=useState((initialLands||[]).some(p=>Number(p.mnum)>0&&Number(p.mden)>0)||(initialBuildings||[]).some(p=>Number(p.mnum)>0&&Number(p.mden)>0));
+  const toggleShare=()=>{const nv=!useShare;setUseShare(nv);if(!nv){setLands(a=>a.map(p=>({...p,mnum:"",mden:""})));setBldgs(a=>a.map(p=>({...p,mnum:"",mden:""})));}};
   const upL=(i,k,v)=>setLands(a=>a.map((p,j)=>j===i?{...p,[k]:v}:p));
   const upB=(i,k,v)=>setBldgs(a=>a.map((p,j)=>j===i?{...p,[k]:v}:p));
   const lv=p=>{const pr=Number(p.price)||0,n=Number(p.num)||0,d=Number(p.den)||0,mn=Number(p.mnum)||0,md=Number(p.mden)||0;let v=(n>0&&d>0)?pr/d*n:pr;if(mn>0&&md>0)v=v*mn/md;return v;};
@@ -278,7 +280,11 @@ function ShikiModal({initialLands,initialBuildings,onApply,onClose}){
           <h3 className="text-base font-bold" style={{color:"#1a2233"}}>土地・建物の内訳</h3>
           <button onClick={onClose} className="text-lg leading-none" style={{color:"#8393a7"}}>×</button>
         </div>
-        <p className="text-xs mb-4" style={{color:"#8393a7",lineHeight:1.7}}>複数入力できます。合計を各「評価額合計」へ転記。<b style={{color:"#1d4ed8"}}>敷地権持分</b>＝区分建物の敷地按分／<b style={{color:"#7c3aed"}}>移転持分</b>＝取得する共有持分。<b style={{color:"#566275"}}>どちらも空欄なら満額（全部）</b>。</p>
+        <p className="text-xs mb-3" style={{color:"#8393a7",lineHeight:1.7}}>複数入力できます。合計を各「評価額合計」へ転記。<b style={{color:"#1d4ed8"}}>敷地権持分</b>＝区分建物の敷地按分（空欄＝満額）。</p>
+        <label className="flex items-center gap-2 cursor-pointer mb-4" onClick={toggleShare} style={{userSelect:"none"}}>
+          <div className="relative rounded-full transition-all" style={{width:34,height:18,background:useShare?"#7c3aed":"#dce1ea",flexShrink:0}}><div className="absolute rounded-full bg-white shadow transition-all" style={{width:14,height:14,top:2,left:useShare?18:2}} /></div>
+          <span className="text-xs" style={{color:useShare?"#7c3aed":"#8393a7",fontWeight:useShare?700:500}}>共有持分の移転がある（移転持分を入力）</span>
+        </label>
 
         <div className="text-xs font-bold mb-2" style={{color:"#1d4ed8"}}>土地</div>
         {lands.map((p,i)=>(
@@ -290,7 +296,7 @@ function ShikiModal({initialLands,initialBuildings,onApply,onClose}){
             <div className="mb-2"><label className="block text-xs mb-1" style={{color:"#566275"}}>評価額（敷地権は一筆の価格）</label>{NI(p.price,v=>upL(i,"price",v),"例: 156566896","100%")}</div>
             <div className="flex items-end gap-3 flex-wrap">
               {Frac("敷地権持分（任意）",p.num,p.den,v=>upL(i,"num",v),v=>upL(i,"den",v),"#1d4ed8")}
-              {Frac("移転持分（任意）",p.mnum,p.mden,v=>upL(i,"mnum",v),v=>upL(i,"mden",v),"#7c3aed")}
+              {useShare&&Frac("移転持分（任意）",p.mnum,p.mden,v=>upL(i,"mnum",v),v=>upL(i,"mden",v),"#7c3aed")}
               <div className="flex-1 text-right" style={{minWidth:110}}><div className="text-[10px]" style={{color:"#8393a7"}}>登記評価額</div><div className="text-sm font-bold" style={{color:"#1a2233",fontVariantNumeric:"tabular-nums"}}>{fmt(Math.floor(lv(p)))}</div></div>
             </div>
           </div>
@@ -305,10 +311,10 @@ function ShikiModal({initialLands,initialBuildings,onApply,onClose}){
               {bldgs.length>1&&<button onClick={()=>setBldgs(a=>a.filter((_,j)=>j!==i))} className="text-xs" style={{color:"#e53e3e"}}>削除</button>}
             </div>
             <div className="mb-2"><label className="block text-xs mb-1" style={{color:"#566275"}}>評価額</label>{NI(p.val,v=>upB(i,"val",v),"例: 5081032","100%")}</div>
-            <div className="flex items-end gap-3 flex-wrap">
+            {useShare&&<div className="flex items-end gap-3 flex-wrap">
               {Frac("移転持分（任意）",p.mnum,p.mden,v=>upB(i,"mnum",v),v=>upB(i,"mden",v),"#7c3aed")}
               <div className="flex-1 text-right" style={{minWidth:110}}><div className="text-[10px]" style={{color:"#8393a7"}}>登記評価額</div><div className="text-sm font-bold" style={{color:"#1a2233",fontVariantNumeric:"tabular-nums"}}>{fmt(Math.floor(bv(p)))}</div></div>
-            </div>
+            </div>}
           </div>
         ))}
         <button onClick={()=>setBldgs(a=>[...a,{val:"",mnum:"",mden:""}])} className="text-xs py-2 px-3 rounded-lg font-medium mb-4" style={{color:"#b45309",background:"#fffbeb",border:"1.5px dashed #fde68a"}}>＋ 建物を追加</button>
