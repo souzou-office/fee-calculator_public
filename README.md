@@ -27,3 +27,22 @@ npm run dev
 `main` ブランチにpushすると GitHub Actions 経由で GitHub Pages に自動デプロイされます。
 
 Settings → Pages → Source を **GitHub Actions** に設定してください。
+
+### Cloudflare Workers（ログイン必須で公開する場合）
+
+静的アセットのみの Worker として配信する。GitHub Pages はリポジトリ名のサブパス配信だが
+Cloudflare はルート配信のため、ビルド時に `--base=/` が必要（`build:cf` が指定済み）。
+
+```bash
+npx wrangler login   # 初回のみ
+npm run deploy       # build:cf してから wrangler deploy
+```
+
+公開後、ダッシュボードで **Cloudflare Access** を有効にすると、サインインした人だけが
+アクセスできるようになる（アプリ側に認証コードは不要）。
+
+Workers & Pages → 対象の Worker → **Access** タブ → **Protect this Worker behind Access**
+→ 対象は **All traffic** → ポリシーで **Email domain** に事務所のドメインを指定 → Apply
+
+なお設定（報酬テーブル・事務所情報など）はブラウザの localStorage にドメインごとに
+保存されるため、別ドメインへ移ると引き継がれない。設定画面のエクスポート／インポートで移すこと。

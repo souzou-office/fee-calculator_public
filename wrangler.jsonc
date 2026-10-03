@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fee-calculator",
+  "compatibility_date": "2026-10-03",
+
+  // 静的アセットのみ（Workerスクリプトなし）。dist は `npm run build:cf` の出力。
+  // GitHub Pages はリポジトリ名のサブパス配信だが Cloudflare はルート配信なので、
+  // ビルド時に --base=/ を渡すこと（build:cf が指定済み）。
+  "assets": {
+    "directory": "./dist",
+    // SPA なので、存在しないパスへのアクセスは index.html を返す
+    "not_found_handling": "single-page-application"
+  }
+}
